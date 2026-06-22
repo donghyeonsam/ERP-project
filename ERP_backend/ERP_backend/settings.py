@@ -35,7 +35,6 @@ INSTALLED_APPS = [
     'procurement',
     'finance',
     'messages.apps.MessagesConfig',
-    'articles',
     'works',
     'ssafy_international',
     'corsheaders',
