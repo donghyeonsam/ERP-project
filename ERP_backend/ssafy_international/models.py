@@ -93,7 +93,7 @@ class Order(models.Model):
     
     orderid = models.AutoField(primary_key=True)
     customerid = models.ForeignKey(Customer, on_delete=models.PROTECT, db_column='customerid', related_name='orders')
-    employeeid = models.ForeignKey(Employee, on_delete=models.PROTECT, db_comlumn='employeeid', related_name='orders')
+    employeeid = models.ForeignKey(Employee, on_delete=models.PROTECT, db_column='employeeid', related_name='orders')
     orderdate = models.DateTimeField(null=True)
     requireddate = models.DateTimeField(null=True)
     shippeddate = models.DateTimeField(blank=True, null=True)
