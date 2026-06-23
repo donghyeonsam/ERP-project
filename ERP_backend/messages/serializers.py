@@ -44,3 +44,10 @@ class MessageReadSerializer(serializers.ModelSerializer):
 
     def get_employee_name(self, obj):
         return f"{obj.employee.lastname}{obj.employee.firstname}"
+    
+
+class ChannelUpdateSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = Channel
+        fields = ('name', 'description') 

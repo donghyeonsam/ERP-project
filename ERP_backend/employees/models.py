@@ -1,5 +1,6 @@
 # employees/models.py
 from django.db import models
+from django.contrib import settings
 
 
 class Employee(models.Model):
@@ -30,6 +31,13 @@ class Employee(models.Model):
     reportsto = models.ForeignKey("self", on_delete=models.SET_NULL,
                 blank=True, null=True, db_column="reportsto", related_name="reports") 
     photopath = models.CharField(max_length=200, blank=True, null=True)
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='employee',
+    )
 
     class Meta:
         db_table = "employee"
