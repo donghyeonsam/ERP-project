@@ -13,7 +13,7 @@ from django.shortcuts import get_object_or_404
 
 from .models import (
     Category, Supplier, Customer, Shipper,
-    Region, Territory, Product, Order, OrderDetail,
+    Region, Territory, Product, Order, Orderdetail,
 )
 from .serializers import (
     CategorySerializer, SupplierSerializer, CustomerSerializer,
@@ -219,7 +219,7 @@ def order_detail(request, pk):
 @api_view(['GET', 'POST'])
 def orderdetail_list(request):
     if request.method == 'GET':
-        qs = OrderDetail.objects.all()
+        qs = Orderdetail.objects.all()
         orderid = request.query_params.get('orderid')
         if orderid:
             qs = qs.filter(orderid=orderid)
@@ -234,7 +234,7 @@ def orderdetail_list(request):
 
 @api_view(['GET', 'PUT', 'DELETE'])
 def orderdetail_detail(request, pk):
-    obj = get_object_or_404(OrderDetail, pk=pk)
+    obj = get_object_or_404(Orderdetail, pk=pk)
 
     if request.method == 'GET':
         return Response(OrderdetailSerializer(obj).data)
