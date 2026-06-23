@@ -60,7 +60,7 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class OrderdetailSerializer(serializers.ModelSerialzier):
+class OrderdetailSerializer(serializers.ModelSerializer):
 
     product_name = serializers.CharField(
         source="productid.productname", read_only=True
