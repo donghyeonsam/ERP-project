@@ -17,4 +17,8 @@ urlpatterns = [
     # 4. WorkNotification
     path('notifications/', views.notification_list, name='notification_list'),
     path('notifications/<int:pk>/', views.notification_detail, name='notification_detail'),
+
+    # 5. Memo
+    path('memos/', views.memo_list, name='memo_list'),
+    path('memos/<int:pk>/', views.memo_detail, name='memo_detail'),
 ]

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import CalendarEvent, Task, TaskComment, WorkNotification
+from .models import CalendarEvent, Task, TaskComment, WorkNotification, Memo
 
 # =====================================================================
 # 1. CalendarEvent (캘린더 일정) Serializer
@@ -57,3 +57,10 @@ class WorkNotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkNotification
         fields = '__all__'
+
+
+class MemoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Memo
+        fields = ['id', 'employee', 'content', 'created_at', 'updated_at']
+        read_only_fields = ['employee', 'created_at', 'updated_at']

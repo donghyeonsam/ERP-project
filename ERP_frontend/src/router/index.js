@@ -1,93 +1,138 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import MainPageView from '@/views/MainPageView.vue'
-import ArticleDetailView from '@/views/ArticleDetailView.vue'
-import ArticleListView from '@/views/ArticleListView.vue'
-import CalendarView from '@/views/CalendarView.vue'
-import CustomerListView from '@/views/CustomerListView.vue'
-import CustomerDetailView from '@/views/CustomerDetailView.vue'
-import EmployeeDetailView from '@/views/EmployeeDetailView.vue'
-import EmployeesListView from '@/views/EmployeesListView.vue'
-import WorkDetailView from '@/views/WorkDetailView.vue'
-import WorkListView from '@/views/WorkListView.vue'
-import WorkFlowView from '@/views/WorkFlowView.vue'
-import FinanceDashBoardView from '@/views/FinanceDashBoardView.vue'
-import ManagementDashBoardView from '@/views/ManagementDashBoardView.vue'
-import WorkCreateView from '@/views/WorkCreateView.vue'
+import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    // ── Auth (no shell) ──────────────────────────────────────────────
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('@/views/LoginView.vue'),
+      meta: { public: true },
+    },
+    {
+      path: '/register',
+      name: 'register',
+      component: () => import('@/views/RegisterView.vue'),
+      meta: { public: true },
+    },
+
+    // ── App shell routes (guarded) ───────────────────────────────────
     {
       path: '/',
-      name: 'main',
-      component: MainPageView,
-    },
-    {
-      path: '/articles',
-      name: 'articleList',
-      component: ArticleListView,
-    },
-    {
-      path: '/articles/:id',
-      name: 'articleDetail',
-      component: ArticleDetailView,
+      name: 'home',
+      component: () => import('@/views/HomeView.vue'),
     },
     {
       path: '/calendar',
       name: 'calendar',
-      component: CalendarView,
-    },
-    {
-      path: '/customers',
-      name: 'customerList',
-      component: CustomerListView,
-    },
-    {
-      path: '/customers/:id',
-      name: 'customerDetail',
-      component: CustomerDetailView,
-    },
-    {
-      path: '/employees',
-      name: 'employeeList',
-      component: EmployeesListView,
-    },
-    {
-      path: '/employees/:id',
-      name: 'employeeDetail',
-      component: EmployeeDetailView,
-    },
-    {
-      path: '/financeDashboard',
-      name: 'financeDashboard',
-      component: FinanceDashBoardView,
-    },
-    {
-      path: '/managementDashboard',
-      name: 'managementDashboard',
-      component: ManagementDashBoardView,
+      component: () => import('@/views/CalendarView.vue'),
     },
     {
       path: '/works',
       name: 'workList',
-      component: WorkListView,
+      component: () => import('@/views/WorkListView.vue'),
+    },
+    {
+      path: '/works/create',
+      name: 'workCreate',
+      component: () => import('@/views/WorkCreateView.vue'),
     },
     {
       path: '/works/:id',
       name: 'workDetail',
-      component: WorkDetailView,
+      component: () => import('@/views/WorkDetailView.vue'),
     },
     {
-      path: '/workFlow',
+      path: '/workflow',
       name: 'workFlow',
-      component: WorkFlowView,
+      component: () => import('@/views/WorkFlowView.vue'),
     },
     {
-      path: '/workCreate',
-      name: 'workCreate',
-      component: WorkCreateView,
+      path: '/attendance',
+      name: 'attendance',
+      component: () => import('@/views/AttendanceView.vue'),
     },
+    {
+      path: '/memo',
+      name: 'memo',
+      component: () => import('@/views/MemoView.vue'),
+    },
+    {
+      path: '/eapproval',
+      name: 'eApproval',
+      component: () => import('@/views/EApprovalView.vue'),
+    },
+
+    // ── Dashboards ───────────────────────────────────────────────────
+    {
+      path: '/dashboard/management',
+      name: 'managementDashboard',
+      component: () => import('@/views/ManagementDashBoardView.vue'),
+    },
+    {
+      path: '/dashboard/sales',
+      name: 'salesDashboard',
+      component: () => import('@/views/SalesDashboardView.vue'),
+    },
+    {
+      path: '/dashboard/procurement',
+      name: 'procurementDashboard',
+      component: () => import('@/views/ProcurementDashboardView.vue'),
+    },
+    {
+      path: '/dashboard/production',
+      name: 'productionDashboard',
+      component: () => import('@/views/ProductionDashboardView.vue'),
+    },
+    {
+      path: '/dashboard/finance',
+      name: 'financeDashboard',
+      component: () => import('@/views/FinanceDashBoardView.vue'),
+    },
+    {
+      path: '/dashboard/hr',
+      name: 'hrDashboard',
+      component: () => import('@/views/HRDashboardView.vue'),
+    },
+
+    // ── Data pages ───────────────────────────────────────────────────
+    {
+      path: '/employees',
+      name: 'employeeList',
+      component: () => import('@/views/EmployeesListView.vue'),
+    },
+    {
+      path: '/employees/:id',
+      name: 'employeeDetail',
+      component: () => import('@/views/EmployeeDetailView.vue'),
+    },
+    {
+      path: '/customers',
+      name: 'customerList',
+      component: () => import('@/views/CustomerListView.vue'),
+    },
+    {
+      path: '/customers/:id',
+      name: 'customerDetail',
+      component: () => import('@/views/CustomerDetailView.vue'),
+    },
+
+    // ── Fallback ─────────────────────────────────────────────────────
+    { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
+})
+
+router.beforeEach(async (to) => {
+  if (to.meta.public) return true
+
+  const auth = useAuthStore()
+  if (!auth.isAuthenticated) {
+    const ok = await auth.restoreSession()
+    if (!ok) return { name: 'login' }
+  }
+  return true
 })
 
 export default router

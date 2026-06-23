@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'django.contrib.sites',              # allauth 필수 (추가됨)
 
     # --- 3rd party ---
+    'channels',
     'rest_framework',
     'rest_framework.authtoken',          # dj-rest-auth 의존성
     # 'rest_framework_simplejwt.token_blacklist',  # (선택) 로그아웃 토큰 무효화
@@ -81,6 +82,13 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'ERP_backend.wsgi.application'
+ASGI_APPLICATION = 'ERP_backend.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    }
+}
 
 
 DATABASES = {
@@ -144,7 +152,7 @@ REST_AUTH = {
 #  - 이메일 인증 비활성화 (사내 ERP라 불필요)
 # =====================================================================
 ACCOUNT_LOGIN_METHODS = {'username'}
-ACCOUNT_SIGNUP_FIELDS = ['username*', 'password1*', 'password2*']
+ACCOUNT_SIGNUP_FIELDS = ['username*', 'password1*', 'password2*', 'email']
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 
 

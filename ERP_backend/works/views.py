@@ -4,13 +4,15 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from django.shortcuts import get_object_or_404, get_list_or_404
 
-from .models import CalendarEvent, Task, TaskComment, WorkNotification
+from .models import CalendarEvent, Task, TaskComment, WorkNotification, Memo
 from .serializers import (
     CalendarEventSerializer,
     TaskSerializer,
     TaskCommentSerializer,
-    WorkNotificationSerializer
+    WorkNotificationSerializer,
+    MemoSerializer,
 )
+from employees.views import current_employee
 
 # =====================================================================
 # 1. CalendarEvent (캘린더 일정)
@@ -154,3 +156,42 @@ def notification_detail(request, pk):
     elif request.method == 'DELETE':
         notification.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# =====================================================================
+# 5. Memo (개인 메모)
+# =====================================================================
+@api_view(['GET', 'POST'])
+def memo_list(request):
+    emp = current_employee(request)
+    if emp is None:
+        return Response({'detail': '사원 정보를 찾을 수 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+    if request.method == 'GET':
+        memos = Memo.objects.filter(employee=emp)
+        return Response(MemoSerializer(memos, many=True).data)
+
+    serializer = MemoSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save(employee=emp)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+def memo_detail(request, pk):
+    emp = current_employee(request)
+    memo = get_object_or_404(Memo, pk=pk, employee=emp)
+
+    if request.method == 'GET':
+        return Response(MemoSerializer(memo).data)
+
+    if request.method == 'PUT':
+        serializer = MemoSerializer(memo, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    memo.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
