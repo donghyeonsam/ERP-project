@@ -93,6 +93,11 @@ const router = createRouter({
       component: () => import('@/views/ProcurementManagementView.vue'),
     },
     {
+      path: '/procurement/orders',
+      name: 'procurementOrders',
+      component: () => import('@/views/ProcurementOrdersView.vue'),
+    },
+    {
       path: '/dashboard/procurement',
       name: 'procurementDashboard',
       component: () => import('@/views/ProcurementDashboardView.vue'),
