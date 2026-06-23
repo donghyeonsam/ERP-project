@@ -10,7 +10,7 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class SupplierSerialzier(serializers.ModelSerializer):
+class SupplierSerializer(serializers.ModelSerializer):
     class Meta:
         model = Supplier
         fields = '__all__'
