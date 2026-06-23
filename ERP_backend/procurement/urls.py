@@ -1,21 +1,32 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
+from django.urls import path
 from . import views
 
-# DRF 라우터 초기화
-router = DefaultRouter()
-
-# 각각의 ViewSet을 고유한 URL 경로(엔드포인트)에 등록
-router.register(r'product-costs', views.ProductCostViewSet, basename='productcost')
-router.register(r'purchase-orders', views.PurchaseOrderViewSet, basename='purchaseorder')
-router.register(r'purchase-order-details', views.PurchaseOrderDetailViewSet, basename='purchaseorderdetail')
-router.register(r'goods-receipts', views.GoodsReceiptViewSet, basename='goodsreceipt')
-router.register(r'materials', views.MaterialViewSet, basename='material')
-router.register(r'boms', views.BomViewSet, basename='bom')
-router.register(r'bom-components', views.BomComponentViewSet, basename='bomcomponent')
-
-# 메인 프로젝트 urls.py가 "api/v1/procurement/"로 이 파일을 인클루드하고 있으므로,
-# 최종 주소는 아래와 같이 자동으로 매핑됩니다.
 urlpatterns = [
-    path('', include(router.urls)),
+    # 1. ProductCost
+    path('product-costs/', views.product_cost_list, name='product_cost_list'),
+    path('product-costs/<int:pk>/', views.product_cost_detail, name='product_cost_detail'),
+
+    # 2. PurchaseOrder
+    path('purchase-orders/', views.purchase_order_list, name='purchase_order_list'),
+    path('purchase-orders/<int:pk>/', views.purchase_order_detail, name='purchase_order_detail'),
+
+    # 3. PurchaseOrderDetail
+    path('purchase-order-details/', views.purchase_order_detail_list, name='purchase_order_detail_list'),
+    path('purchase-order-details/<int:pk>/', views.purchase_order_detail_item, name='purchase_order_detail_item'),
+
+    # 4. GoodsReceipt
+    path('goods-receipts/', views.goods_receipt_list, name='goods_receipt_list'),
+    path('goods-receipts/<int:pk>/', views.goods_receipt_detail, name='goods_receipt_detail'),
+
+    # 5. Material
+    path('materials/', views.material_list, name='material_list'),
+    path('materials/<str:pk>/', views.material_detail, name='material_detail'), # Material ID는 CharField이므로 <str:pk>
+
+    # 6. Bom
+    path('boms/', views.bom_list, name='bom_list'),
+    path('boms/<int:pk>/', views.bom_detail, name='bom_detail'),
+
+    # 7. BomComponent
+    path('bom-components/', views.bom_component_list, name='bom_component_list'),
+    path('bom-components/<int:pk>/', views.bom_component_detail, name='bom_component_detail'),
 ]
