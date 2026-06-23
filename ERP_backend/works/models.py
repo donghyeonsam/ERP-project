@@ -153,3 +153,22 @@ class WorkNotification(models.Model):
     def __str__(self):
         status = "읽음" if self.is_read else "미읽음"
         return f"[{status}] {self.employee.lastname}님 - {self.message[:20]}"
+
+
+class Memo(models.Model):
+    employee = models.ForeignKey(
+        "employees.Employee",
+        on_delete=models.CASCADE,
+        related_name="memos",
+        verbose_name="작성자"
+    )
+    content = models.TextField(verbose_name="내용")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "memo"
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"[{self.employee.lastname}] {self.content[:30]}"

@@ -39,6 +39,7 @@ class EmployeeTerritorySerializer(serializers.ModelSerializer):
 class EmployeeRegisterSerializer(RegisterSerializer):
     # 기본 필드(username, password1, password2)에 더해 사원번호를 추가로 받음
     employeeid = serializers.IntegerField(write_only=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
  
     def validate_employeeid(self, value):
         """사원번호 검증: 실제 존재 + 아직 미가입이어야 함"""
