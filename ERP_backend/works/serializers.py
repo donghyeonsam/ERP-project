@@ -62,5 +62,5 @@ class WorkNotificationSerializer(serializers.ModelSerializer):
 class MemoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Memo
-        fields = ['id', 'employee', 'content', 'created_at', 'updated_at']
+        fields = ['id', 'employee', 'content', 'is_pinned', 'created_at', 'updated_at']
         read_only_fields = ['employee', 'created_at', 'updated_at']

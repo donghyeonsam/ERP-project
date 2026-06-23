@@ -163,12 +163,13 @@ class Memo(models.Model):
         verbose_name="작성자"
     )
     content = models.TextField(verbose_name="내용")
+    is_pinned = models.BooleanField(default=False, verbose_name="고정 여부")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "memo"
-        ordering = ['-updated_at']
+        ordering = ['-is_pinned', '-updated_at']
 
     def __str__(self):
         return f"[{self.employee.lastname}] {self.content[:30]}"

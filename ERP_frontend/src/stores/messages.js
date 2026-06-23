@@ -39,12 +39,13 @@ export const useMessagesStore = defineStore('messages', () => {
       ])
       activeChannel.value = chRes.data
       messages.value = msgRes.data
-      // 읽음 처리 (last_read_at 갱신 + unread_count 0으로)
-      messagesApi.markChannelRead(channelId).then(() => {
-        // 채널 목록의 unread_count 초기화
+      // 읽음 처리 (last_read_at 갱신 + unread_count 0으로 + 메시지별 read_count 즉시 반영)
+      try {
+        const readRes = await messagesApi.markChannelRead(channelId)
+        updateReadCounts(readRes.data.read_counts)
         const ch = channels.value.find((c) => c.id === channelId)
         if (ch) ch.unread_count = 0
-      }).catch(() => {})
+      } catch { /* 읽음 처리 실패해도 채팅방 진입은 유지 */ }
     } finally {
       loading.value = false
     }

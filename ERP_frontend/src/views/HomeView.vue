@@ -30,23 +30,22 @@
       <div class="card erp-card">
         <div class="card-header d-flex align-items-center justify-content-between py-2">
           <span class="fw-semibold small"><i class="bi bi-journal-text me-1 text-warning"></i>메모</span>
-          <RouterLink to="/memo" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.75rem">전체 보기</RouterLink>
+          <button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.75rem" @click="memoExpanded = true">전체 보기</button>
         </div>
-        <div class="card-body p-3">
-          <textarea
-            v-model="memoText"
-            class="form-control border-0 bg-light"
-            rows="8"
-            placeholder="메모를 입력하세요..."
-            style="resize:none;font-size:0.85rem;border-radius:8px"
-          ></textarea>
-          <button class="btn btn-sm btn-warning mt-2 w-100 fw-semibold" @click="saveMemo" :disabled="memoSaving">
-            <span v-if="memoSaving" class="spinner-border spinner-border-sm me-1"></span>
-            <i v-else class="bi bi-floppy me-1"></i>저장
-          </button>
-          <div v-if="memoSaved" class="text-success small text-center mt-1">
-            <i class="bi bi-check-circle me-1"></i>저장되었습니다
-          </div>
+        <div class="card-body p-2">
+          <div v-if="memosLoading" class="text-center py-4"><span class="spinner-border spinner-border-sm"></span></div>
+          <template v-else>
+            <div v-for="(memo, idx) in pinnedMemos" :key="memo.id" :class="['pinned-memo-item mb-2', memoColorClass(idx)]">
+              <div class="d-flex justify-content-between align-items-start gap-2">
+                <div class="small text-truncate pinned-memo-content">{{ memo.content || '(내용 없음)' }}</div>
+                <i class="bi bi-star-fill text-warning flex-shrink-0" style="font-size:0.75rem;cursor:pointer" @click="togglePin(memo)"></i>
+              </div>
+              <div class="text-muted" style="font-size:0.65rem">{{ fmtMemoDate(memo.updated_at) }}</div>
+            </div>
+            <div v-if="pinnedMemos.length === 0" class="text-muted small text-center py-4">
+              <i class="bi bi-pin-angle fs-4 d-block mb-1"></i>고정된 메모가 없습니다
+            </div>
+          </template>
         </div>
       </div>
     </div>
@@ -202,6 +201,50 @@
     </div>
 
   </div>
+
+  <!-- ── Memo Expanded Overlay (홈 화면 레이아웃은 그대로 두고 메모만 확장) ── -->
+  <Teleport to="body">
+    <div v-if="memoExpanded" class="memo-overlay-backdrop" @click.self="memoExpanded = false">
+      <div class="memo-expanded-panel shadow-lg">
+        <div class="memo-expanded-header">
+          <span class="fw-bold"><i class="bi bi-journal-text me-2 text-warning"></i>메모</span>
+          <button class="btn-close-memo" @click="memoExpanded = false"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
+          <span class="small text-muted">전체 메모 <strong>{{ memos.length }}</strong></span>
+          <div class="position-relative">
+            <i class="bi bi-search position-absolute" style="left:8px;top:7px;font-size:0.7rem;color:#94a3b8"></i>
+            <input v-model="memoSearch" class="form-control form-control-sm" style="padding-left:24px;font-size:0.75rem;width:150px" placeholder="검색" />
+          </div>
+        </div>
+        <div class="memo-expanded-body">
+          <div v-for="(memo, idx) in filteredMemos" :key="memo.id" :class="['memo-grid-card', memoColorClass(idx)]">
+            <textarea
+              v-model="memo.content"
+              class="memo-grid-textarea"
+              rows="4"
+              placeholder="메모를 입력하세요..."
+              @blur="updateMemoContent(memo)"
+            ></textarea>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+              <span class="text-muted" style="font-size:0.65rem">{{ fmtMemoDate(memo.updated_at) }}</span>
+              <div class="d-flex gap-2 align-items-center">
+                <i class="bi" :class="memo.is_pinned ? 'bi-star-fill text-warning' : 'bi-star text-muted'"
+                  style="cursor:pointer;font-size:0.9rem" @click="togglePin(memo)"></i>
+                <i class="bi bi-trash text-danger" style="cursor:pointer;font-size:0.8rem" @click="removeMemo(memo)"></i>
+              </div>
+            </div>
+          </div>
+          <div v-if="filteredMemos.length === 0" class="text-muted small text-center py-5 w-100">메모가 없습니다</div>
+        </div>
+        <div class="memo-expanded-footer">
+          <button class="btn btn-sm btn-warning w-100 fw-semibold" @click="addNewMemo">
+            <i class="bi bi-plus-lg me-1"></i>새 메모 추가
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup>
@@ -214,43 +257,68 @@ import { worksApi } from '@/api/works'
 const authStore = useAuthStore()
 const worksStore = useWorksStore()
 
-// ── 메모 (API 기반) ──────────────────────────────────────
-const memoText = ref('')
-const memoId = ref(null)
-const memoSaving = ref(false)
-const memoSaved = ref(false)
+// ── 메모 (API 기반, 다건) ──────────────────────────────────
+const memos = ref([])
+const memosLoading = ref(false)
+const memoExpanded = ref(false)
+const memoSearch = ref('')
 
-async function loadMemo() {
+// 홈 화면에는 고정된 메모만 노출
+const pinnedMemos = computed(() => memos.value.filter((m) => m.is_pinned))
+// 전체보기(확장) 패널에는 검색어로 필터링된 전체 메모 노출
+const filteredMemos = computed(() => {
+  if (!memoSearch.value.trim()) return memos.value
+  const q = memoSearch.value.toLowerCase()
+  return memos.value.filter((m) => (m.content || '').toLowerCase().includes(q))
+})
+
+const MEMO_COLORS = ['memo-yellow', 'memo-mint', 'memo-purple']
+function memoColorClass(idx) { return MEMO_COLORS[idx % MEMO_COLORS.length] }
+
+function fmtMemoDate(d) {
+  if (!d) return ''
+  try { return new Date(d).toLocaleDateString('ko-KR') } catch { return d }
+}
+
+async function loadMemos() {
+  memosLoading.value = true
   try {
     const res = await worksApi.memos()
-    if (res.data.length > 0) {
-      memoId.value = res.data[0].id
-      memoText.value = res.data[0].content
-    }
+    memos.value = res.data
   } catch {
-    memoText.value = localStorage.getItem('erp_memo') || ''
+    memos.value = []
+  } finally {
+    memosLoading.value = false
   }
 }
 
-async function saveMemo() {
-  memoSaving.value = true
-  memoSaved.value = false
+async function togglePin(memo) {
+  const next = !memo.is_pinned
+  memo.is_pinned = next
   try {
-    if (memoId.value) {
-      await worksApi.updateMemo(memoId.value, memoText.value)
-    } else {
-      const res = await worksApi.createMemo(memoText.value)
-      memoId.value = res.data.id
-    }
-    memoSaved.value = true
-    setTimeout(() => { memoSaved.value = false }, 2000)
+    await worksApi.togglePinMemo(memo.id, next)
   } catch {
-    localStorage.setItem('erp_memo', memoText.value)
-    memoSaved.value = true
-    setTimeout(() => { memoSaved.value = false }, 2000)
-  } finally {
-    memoSaving.value = false
+    memo.is_pinned = !next
   }
+}
+
+async function updateMemoContent(memo) {
+  if (!memo.id) return
+  try { await worksApi.updateMemo(memo.id, memo.content) } catch {}
+}
+
+async function addNewMemo() {
+  try {
+    const res = await worksApi.createMemo('')
+    memos.value.unshift(res.data)
+  } catch {}
+}
+
+async function removeMemo(memo) {
+  if (memo.id) {
+    try { await worksApi.deleteMemo(memo.id) } catch {}
+  }
+  memos.value = memos.value.filter((m) => m !== memo)
 }
 
 // ── 인증 / 사용자 ────────────────────────────────────────
@@ -389,7 +457,7 @@ onMounted(() => {
   updateClock()
   clockTimer = setInterval(updateClock, 1000)
   loadAttendance()
-  loadMemo()
+  loadMemos()
   worksStore.fetchTasks().catch(() => {})
   worksStore.fetchCalendarEvents().catch(() => {})
   worksStore.fetchNotifications().catch(() => {})
@@ -435,7 +503,7 @@ onUnmounted(() => clearInterval(clockTimer))
 .cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
+  gap: 3px;
   font-size: 0.72rem;
 }
 .cal-head {
@@ -445,9 +513,11 @@ onUnmounted(() => clearInterval(clockTimer))
   font-weight: 600;
 }
 .cal-cell {
-  text-align: center;
-  padding: 4px 0;
-  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  border-radius: 6px;
   cursor: default;
   color: #374151;
 }
@@ -492,5 +562,81 @@ onUnmounted(() => clearInterval(clockTimer))
 .notif-item {
   background: #f8fafc;
   border-left: 3px solid #e5e7eb;
+}
+
+/* ── 메모 (홈 위젯: 고정된 메모만) ───────────────────────── */
+.pinned-memo-item {
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+.pinned-memo-content { color: #374151; }
+
+.memo-yellow { background: #fef9c3; border: 1px solid #fde68a; }
+.memo-mint   { background: #ccfbf1; border: 1px solid #99f6e4; }
+.memo-purple { background: #ede9fe; border: 1px solid #ddd6fe; }
+
+/* ── 메모 확장 오버레이 ──────────────────────────────────── */
+.memo-overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+}
+.memo-expanded-panel {
+  width: 420px;
+  max-height: 82vh;
+  background: #fff;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.memo-expanded-header {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #f1f5f9;
+}
+.btn-close-memo {
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  cursor: pointer;
+  line-height: 1;
+}
+.btn-close-memo:hover { color: #475569; }
+
+.memo-expanded-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  align-content: start;
+}
+.memo-grid-card {
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+.memo-grid-textarea {
+  resize: none;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.78rem;
+  color: #374151;
+  width: 100%;
+}
+.memo-expanded-footer {
+  padding: 10px 14px;
+  border-top: 1px solid #f1f5f9;
 }
 </style>

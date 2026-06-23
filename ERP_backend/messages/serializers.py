@@ -40,9 +40,11 @@ class ChannelSerializer(serializers.ModelSerializer):
             return 0
         try:
             member = obj.members.get(employee=me)
+            # 본인이 보낸 메시지는 본인에게 미읽음으로 집계하지 않음
+            qs = obj.messages.exclude(sender=me)
             if member.last_read_at:
-                return obj.messages.filter(created_at__gt=member.last_read_at).count()
-            return obj.messages.count()
+                return qs.filter(created_at__gt=member.last_read_at).count()
+            return qs.count()
         except ChannelMember.DoesNotExist:
             return 0
 

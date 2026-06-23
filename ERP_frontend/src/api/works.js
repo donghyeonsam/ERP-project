@@ -11,5 +11,6 @@ export const worksApi = {
   memos: () => http.get('works/memos/'),
   createMemo: (content) => http.post('works/memos/', { content }),
   updateMemo: (id, content) => http.put(`works/memos/${id}/`, { content }),
+  togglePinMemo: (id, isPinned) => http.put(`works/memos/${id}/`, { is_pinned: isPinned }),
   deleteMemo: (id) => http.delete(`works/memos/${id}/`),
 }
