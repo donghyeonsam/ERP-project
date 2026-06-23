@@ -55,3 +55,36 @@ class EmployeeTerritory(models.Model):
     class Meta:
         db_table = "employeeterritory"
         unique_together = ("employeeid", "territoryid")
+
+
+class Attendance(models.Model):
+    STATUS_CHOICES = [
+        ('정상', '정상'),
+        ('지각', '지각'),
+        ('조퇴', '조퇴'),
+        ('결근', '결근'),
+        ('휴가', '휴가'),
+    ]
+
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.CASCADE,
+        db_column="employeeid",
+        related_name="attendances",
+        verbose_name="직원",
+    )
+    date = models.DateField(db_column="date", verbose_name="날짜")
+    checkin_time = models.TimeField(null=True, blank=True, db_column="checkin_time", verbose_name="출근 시간")
+    checkout_time = models.TimeField(null=True, blank=True, db_column="checkout_time", verbose_name="퇴근 시간")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='정상', db_column="status", verbose_name="상태")
+    note = models.CharField(max_length=200, blank=True, null=True, db_column="note", verbose_name="비고")
+
+    class Meta:
+        db_table = "attendance"
+        unique_together = ("employee", "date")
+        ordering = ["-date"]
+        verbose_name = "근태"
+        verbose_name_plural = "근태 목록"
+
+    def __str__(self):
+        return f"{self.employee} {self.date} ({self.status})"

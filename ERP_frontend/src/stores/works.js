@@ -34,5 +34,16 @@ export const useWorksStore = defineStore('works', () => {
     return res.data
   }
 
-  return { tasks, calendarEvents, notifications, loading, fetchTasks, fetchCalendarEvents, fetchNotifications, createTask }
+  async function createCalendarEvent(data) {
+    const res = await worksApi.createCalendarEvent(data)
+    calendarEvents.value.push(res.data)
+    return res.data
+  }
+
+  async function deleteCalendarEvent(id) {
+    await worksApi.deleteCalendarEvent(id)
+    calendarEvents.value = calendarEvents.value.filter((e) => e.id !== id)
+  }
+
+  return { tasks, calendarEvents, notifications, loading, fetchTasks, fetchCalendarEvents, fetchNotifications, createTask, createCalendarEvent, deleteCalendarEvent }
 })

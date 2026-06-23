@@ -35,14 +35,17 @@
         <div class="card-body p-2">
           <div v-if="memosLoading" class="text-center py-4"><span class="spinner-border spinner-border-sm"></span></div>
           <template v-else>
-            <div v-for="(memo, idx) in pinnedMemos" :key="memo.id" :class="['pinned-memo-item mb-2', memoColorClass(idx)]">
-              <div class="d-flex justify-content-between align-items-start gap-2">
-                <div class="small text-truncate pinned-memo-content">{{ memo.content || '(내용 없음)' }}</div>
-                <i class="bi bi-star-fill text-warning flex-shrink-0" style="font-size:0.75rem;cursor:pointer" @click="togglePin(memo)"></i>
+            <!-- 고정된 메모 가로 스크롤 -->
+            <div v-if="pinnedMemos.length > 0" class="pinned-memos-scroll">
+              <div v-for="(memo, idx) in pinnedMemos" :key="memo.id" :class="['pinned-memo-card', memoColorClass(idx)]">
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                  <i class="bi bi-star-fill text-warning" style="font-size:0.7rem;cursor:pointer" @click="togglePin(memo)"></i>
+                  <span class="text-muted" style="font-size:0.6rem">{{ fmtMemoDate(memo.updated_at) }}</span>
+                </div>
+                <div class="small pinned-memo-content">{{ memo.content || '(내용 없음)' }}</div>
               </div>
-              <div class="text-muted" style="font-size:0.65rem">{{ fmtMemoDate(memo.updated_at) }}</div>
             </div>
-            <div v-if="pinnedMemos.length === 0" class="text-muted small text-center py-4">
+            <div v-else class="text-muted small text-center py-4">
               <i class="bi bi-pin-angle fs-4 d-block mb-1"></i>고정된 메모가 없습니다
             </div>
           </template>
@@ -71,8 +74,10 @@
                 v-for="cell in calendarCells"
                 :key="cell.key"
                 class="cal-cell"
-                :class="{ 'other-month': !cell.inMonth, today: cell.isToday, 'has-event': cell.hasEvent }"
-              >{{ cell.day }}</div>
+                :class="{ 'other-month': !cell.inMonth, 'has-event': cell.hasEvent }"
+              >
+                <span class="cal-num" :class="{ today: cell.isToday }">{{ cell.day }}</span>
+              </div>
             </div>
             <div>
               <div v-for="ev in upcomingEvents.slice(0,4)" :key="ev.id" class="event-chip mb-1 d-flex align-items-center">
@@ -135,19 +140,22 @@
               class="btn btn-sm flex-grow-1 fw-semibold"
               :class="checkinTime ? 'btn-success' : 'btn-outline-success'"
               @click="doCheckIn"
-              :disabled="!!checkinTime"
+              :disabled="!!checkinTime || savingAttendance"
             >
               <i class="bi bi-box-arrow-in-right me-1"></i>
+              <span v-if="savingAttendance && !checkinTime" class="spinner-border spinner-border-sm me-1"></span>
               {{ checkinTime ? checkinTime : '출근' }}
             </button>
             <button
               class="btn btn-sm flex-grow-1 fw-semibold"
               :class="checkoutTime ? 'btn-secondary' : 'btn-outline-secondary'"
               @click="doCheckOut"
-              :disabled="!checkinTime || !!checkoutTime"
+              :disabled="!checkinTime || savingAttendance"
+              :title="checkoutTime ? '클릭하여 퇴근 시간 수정' : ''"
             >
               <i class="bi bi-box-arrow-right me-1"></i>
-              {{ checkoutTime ? checkoutTime : '퇴근' }}
+              <span v-if="savingAttendance && checkinTime" class="spinner-border spinner-border-sm me-1"></span>
+              {{ checkoutTime ? checkoutTime + ' ✎' : '퇴근' }}
             </button>
           </div>
 
@@ -161,7 +169,7 @@
             </div>
             <div class="col-6">
               <div class="p-2 rounded" :class="checkoutTime ? 'bg-secondary bg-opacity-10' : 'bg-light'">
-                <div class="fw-bold small" :class="checkoutTime ? 'text-secondary' : 'text-muted'">퇴근</div>
+                <div class="fw-bold small" :class="checkoutTime ? 'text-secondary' : 'text-muted'">퇴근 <span v-if="checkoutTime" class="text-muted fw-normal" style="font-size:0.65rem">(재클릭 가능)</span></div>
                 <div class="fw-semibold" style="font-size:0.85rem">{{ checkoutTime || '--:--' }}</div>
               </div>
             </div>
@@ -219,6 +227,17 @@
         </div>
         <div class="memo-expanded-body">
           <div v-for="(memo, idx) in filteredMemos" :key="memo.id" :class="['memo-grid-card', memoColorClass(idx)]">
+            <!-- 핀 버튼: 우측 상단 -->
+            <div class="d-flex justify-content-end mb-1">
+              <button
+                class="btn-pin"
+                :class="{ pinned: memo.is_pinned }"
+                :title="memo.is_pinned ? '고정 해제' : '고정'"
+                @click="togglePin(memo)"
+              >
+                <i class="bi" :class="memo.is_pinned ? 'bi-pin-fill' : 'bi-pin'"></i>
+              </button>
+            </div>
             <textarea
               v-model="memo.content"
               class="memo-grid-textarea"
@@ -228,17 +247,29 @@
             ></textarea>
             <div class="d-flex justify-content-between align-items-center mt-2">
               <span class="text-muted" style="font-size:0.65rem">{{ fmtMemoDate(memo.updated_at) }}</span>
-              <div class="d-flex gap-2 align-items-center">
-                <i class="bi" :class="memo.is_pinned ? 'bi-star-fill text-warning' : 'bi-star text-muted'"
-                  style="cursor:pointer;font-size:0.9rem" @click="togglePin(memo)"></i>
-                <i class="bi bi-trash text-danger" style="cursor:pointer;font-size:0.8rem" @click="removeMemo(memo)"></i>
-              </div>
+              <i class="bi bi-trash text-danger" style="cursor:pointer;font-size:0.8rem" @click="removeMemo(memo)"></i>
             </div>
           </div>
           <div v-if="filteredMemos.length === 0" class="text-muted small text-center py-5 w-100">메모가 없습니다</div>
         </div>
         <div class="memo-expanded-footer">
-          <button class="btn btn-sm btn-warning w-100 fw-semibold" @click="addNewMemo">
+          <!-- 메모 생성 폼 -->
+          <div v-if="showNewMemoForm" class="memo-create-form">
+            <textarea
+              v-model="newMemoContent"
+              class="form-control form-control-sm mb-2"
+              rows="3"
+              placeholder="메모 내용을 입력하세요..."
+              style="font-size:0.8rem;resize:none"
+            ></textarea>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-secondary flex-grow-1" @click="showNewMemoForm = false; newMemoContent = ''">취소</button>
+              <button class="btn btn-sm btn-warning flex-grow-1 fw-semibold" @click="submitNewMemo">
+                <i class="bi bi-check-lg me-1"></i>저장
+              </button>
+            </div>
+          </div>
+          <button v-else class="btn btn-sm btn-warning w-100 fw-semibold" @click="showNewMemoForm = true">
             <i class="bi bi-plus-lg me-1"></i>새 메모 추가
           </button>
         </div>
@@ -253,6 +284,7 @@ import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useWorksStore } from '@/stores/works'
 import { worksApi } from '@/api/works'
+import { attendanceApi } from '@/api/employees'
 
 const authStore = useAuthStore()
 const worksStore = useWorksStore()
@@ -262,6 +294,8 @@ const memos = ref([])
 const memosLoading = ref(false)
 const memoExpanded = ref(false)
 const memoSearch = ref('')
+const showNewMemoForm = ref(false)
+const newMemoContent = ref('')
 
 // 홈 화면에는 고정된 메모만 노출
 const pinnedMemos = computed(() => memos.value.filter((m) => m.is_pinned))
@@ -307,10 +341,14 @@ async function updateMemoContent(memo) {
   try { await worksApi.updateMemo(memo.id, memo.content) } catch {}
 }
 
-async function addNewMemo() {
+async function submitNewMemo() {
+  const content = newMemoContent.value.trim()
+  if (!content) return
   try {
-    const res = await worksApi.createMemo('')
+    const res = await worksApi.createMemo(content)
     memos.value.unshift(res.data)
+    newMemoContent.value = ''
+    showNewMemoForm.value = false
   } catch {}
 }
 
@@ -377,60 +415,90 @@ const upcomingEvents = computed(() =>
 function prevMonth() { calendarDate.value = new Date(calendarDate.value.getFullYear(), calendarDate.value.getMonth() - 1, 1) }
 function nextMonth() { calendarDate.value = new Date(calendarDate.value.getFullYear(), calendarDate.value.getMonth() + 1, 1) }
 
-// ── 근태 (localStorage 기반) ────────────────────────────
-const checkinTime = ref('')
-const checkoutTime = ref('')
+// ── 근태 (API 기반) ────────────────────────────────────
+const todayRecord = ref(null)
+const weeklyMinutes = ref(0)
+const savingAttendance = ref(false)
 const currentTime = ref('')
 const todayString = ref('')
 let clockTimer = null
 
-function loadAttendance() {
-  const today = new Date().toISOString().slice(0, 10)
-  const saved = JSON.parse(localStorage.getItem('erp_attendance') || '{}')
-  if (saved.date === today) {
-    checkinTime.value = saved.checkin || ''
-    checkoutTime.value = saved.checkout || ''
+const checkinTime = computed(() => todayRecord.value?.checkin_time?.slice(0, 5) || '')
+const checkoutTime = computed(() => todayRecord.value?.checkout_time?.slice(0, 5) || '')
+
+async function loadAttendance() {
+  try {
+    const res = await attendanceApi.today()
+    todayRecord.value = res.data
+  } catch {
+    todayRecord.value = null
+  }
+  // 주간 누적 시간 계산을 위해 이번 달 기록 로드
+  try {
+    const m = new Date().toISOString().slice(0, 7)
+    const res = await attendanceApi.list(m)
+    const d = new Date()
+    const day = d.getDay()
+    const monday = new Date(d)
+    monday.setDate(d.getDate() - (day === 0 ? 6 : day - 1))
+    const weekStart = monday.toISOString().slice(0, 10)
+    const sunday = new Date(monday)
+    sunday.setDate(monday.getDate() + 6)
+    const weekEnd = sunday.toISOString().slice(0, 10)
+    let total = 0
+    res.data.filter(r => r.date >= weekStart && r.date <= weekEnd).forEach(rec => {
+      if (rec.checkin_time && rec.checkout_time) {
+        const [ih, im] = rec.checkin_time.split(':').map(Number)
+        const [oh, om] = rec.checkout_time.split(':').map(Number)
+        const diff = (oh * 60 + om) - (ih * 60 + im)
+        if (diff > 0) total += diff
+      }
+    })
+    weeklyMinutes.value = total
+  } catch {
+    weeklyMinutes.value = 0
   }
 }
 
-function saveAttendance() {
-  localStorage.setItem('erp_attendance', JSON.stringify({
-    date: new Date().toISOString().slice(0, 10),
-    checkin: checkinTime.value,
-    checkout: checkoutTime.value,
-  }))
+async function doCheckIn() {
+  if (checkinTime.value || savingAttendance.value) return
+  savingAttendance.value = true
+  try {
+    const time = new Date().toTimeString().slice(0, 8)
+    const res = await attendanceApi.checkin(time)
+    todayRecord.value = res.data
+    await loadAttendance()
+  } catch (e) {
+    const msg = e?.response?.data?.detail || e?.response?.data || '출근 처리에 실패했습니다.'
+    alert(String(msg))
+  } finally {
+    savingAttendance.value = false
+  }
 }
 
-function doCheckIn() {
-  if (checkinTime.value) return
-  checkinTime.value = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
-  saveAttendance()
-}
-
-function doCheckOut() {
-  if (!checkinTime.value || checkoutTime.value) return
-  checkoutTime.value = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
-  saveAttendance()
+async function doCheckOut() {
+  if (!checkinTime.value || savingAttendance.value) return
+  savingAttendance.value = true
+  try {
+    const time = new Date().toTimeString().slice(0, 8)
+    const res = await attendanceApi.checkout(time)
+    todayRecord.value = res.data
+    await loadAttendance()
+  } catch (e) {
+    const msg = e?.response?.data?.detail || e?.response?.data || '퇴근 처리에 실패했습니다.'
+    alert(String(msg))
+  } finally {
+    savingAttendance.value = false
+  }
 }
 
 const weeklyHours = computed(() => {
-  if (!checkinTime.value || !checkoutTime.value) return '-- h'
-  try {
-    const [ih, im] = checkinTime.value.split(':').map(Number)
-    const [oh, om] = checkoutTime.value.split(':').map(Number)
-    const diff = (oh * 60 + om) - (ih * 60 + im)
-    return `${Math.floor(diff / 60)}h ${diff % 60}m`
-  } catch { return '-- h' }
+  if (weeklyMinutes.value === 0) return '0h 0m'
+  return `${Math.floor(weeklyMinutes.value / 60)}h ${weeklyMinutes.value % 60}m`
 })
 
 const weeklyProgress = computed(() => {
-  if (!checkinTime.value || !checkoutTime.value) return 0
-  try {
-    const [ih, im] = checkinTime.value.split(':').map(Number)
-    const [oh, om] = checkoutTime.value.split(':').map(Number)
-    const diff = (oh * 60 + om) - (ih * 60 + im)
-    return Math.min(100, Math.round((diff / 480) * 100))
-  } catch { return 0 }
+  return Math.min(100, Math.round((weeklyMinutes.value / (40 * 60)) * 100))
 })
 
 function updateClock() {
@@ -516,21 +584,31 @@ onUnmounted(() => clearInterval(clockTimer))
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 24px;
-  border-radius: 6px;
+  height: 28px;
   cursor: default;
   color: #374151;
+  position: relative;
 }
 .cal-cell.other-month { color: #d1d5db; }
-.cal-cell.today { background: #2563eb; color: #fff; font-weight: 700; border-radius: 50%; }
+.cal-num {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+.cal-num.today { background: #2563eb; color: #fff; font-weight: 700; }
 .cal-cell.has-event::after {
   content: '';
-  display: block;
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
   width: 4px;
   height: 4px;
   background: #f59e0b;
   border-radius: 50%;
-  margin: 1px auto 0;
 }
 
 .event-dot {
@@ -564,12 +642,33 @@ onUnmounted(() => clearInterval(clockTimer))
   border-left: 3px solid #e5e7eb;
 }
 
-/* ── 메모 (홈 위젯: 고정된 메모만) ───────────────────────── */
-.pinned-memo-item {
+/* ── 메모 (홈 위젯: 고정된 메모 가로 스크롤) ──────────────── */
+.pinned-memos-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #e2e8f0 transparent;
+}
+.pinned-memos-scroll::-webkit-scrollbar { height: 4px; }
+.pinned-memos-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 2px; }
+
+.pinned-memo-card {
+  flex-shrink: 0;
+  width: 150px;
   padding: 8px 10px;
   border-radius: 8px;
 }
-.pinned-memo-content { color: #374151; }
+.pinned-memo-content {
+  color: #374151;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 
 .memo-yellow { background: #fef9c3; border: 1px solid #fde68a; }
 .memo-mint   { background: #ccfbf1; border: 1px solid #99f6e4; }
@@ -639,4 +738,22 @@ onUnmounted(() => clearInterval(clockTimer))
   padding: 10px 14px;
   border-top: 1px solid #f1f5f9;
 }
+.memo-create-form {
+  padding: 4px 0;
+}
+
+/* 핀 버튼 */
+.btn-pin {
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.15s, background 0.15s;
+}
+.btn-pin:hover { color: #f59e0b; background: rgba(245,158,11,0.1); }
+.btn-pin.pinned { color: #f59e0b; }
 </style>

@@ -18,16 +18,23 @@ const router = createRouter({
       meta: { public: true },
     },
 
-    // ── App shell routes (guarded) ───────────────────────────────────
+    // ── 홈 ──────────────────────────────────────────────────────────
     {
       path: '/',
       name: 'home',
       component: () => import('@/views/HomeView.vue'),
     },
+
+    // ── Works ────────────────────────────────────────────────────────
     {
       path: '/calendar',
       name: 'calendar',
       component: () => import('@/views/CalendarView.vue'),
+    },
+    {
+      path: '/workflow',
+      name: 'workFlow',
+      component: () => import('@/views/WorkFlowView.vue'),
     },
     {
       path: '/works',
@@ -44,60 +51,88 @@ const router = createRouter({
       name: 'workDetail',
       component: () => import('@/views/WorkDetailView.vue'),
     },
-    {
-      path: '/workflow',
-      name: 'workFlow',
-      component: () => import('@/views/WorkFlowView.vue'),
-    },
-    {
-      path: '/attendance',
-      name: 'attendance',
-      component: () => import('@/views/AttendanceView.vue'),
-    },
-    {
-      path: '/memo',
-      name: 'memo',
-      component: () => import('@/views/MemoView.vue'),
-    },
-    {
-      path: '/eapproval',
-      name: 'eApproval',
-      component: () => import('@/views/EApprovalView.vue'),
-    },
 
-    // ── Dashboards ───────────────────────────────────────────────────
+    // ── 경영 ─────────────────────────────────────────────────────────
     {
       path: '/dashboard/management',
       name: 'managementDashboard',
       component: () => import('@/views/ManagementDashBoardView.vue'),
     },
     {
+      path: '/management/performance',
+      name: 'managementPerformance',
+      component: () => import('@/views/ManagementPerformanceView.vue'),
+    },
+    {
+      path: '/management/reports',
+      name: 'managementReports',
+      component: () => import('@/views/ManagementReportView.vue'),
+    },
+
+    // ── 영업 ─────────────────────────────────────────────────────────
+    {
+      path: '/customers',
+      name: 'customerList',
+      component: () => import('@/views/CustomerListView.vue'),
+    },
+    {
+      path: '/customers/:id',
+      name: 'customerDetail',
+      component: () => import('@/views/CustomerDetailView.vue'),
+    },
+    {
       path: '/dashboard/sales',
       name: 'salesDashboard',
       component: () => import('@/views/SalesDashboardView.vue'),
+    },
+
+    // ── 구매 ─────────────────────────────────────────────────────────
+    {
+      path: '/procurement/management',
+      name: 'procurementManagement',
+      component: () => import('@/views/ProcurementManagementView.vue'),
     },
     {
       path: '/dashboard/procurement',
       name: 'procurementDashboard',
       component: () => import('@/views/ProcurementDashboardView.vue'),
     },
+
+    // ── 물류 ─────────────────────────────────────────────────────────
     {
-      path: '/dashboard/production',
-      name: 'productionDashboard',
-      component: () => import('@/views/ProductionDashboardView.vue'),
+      path: '/logistics/inbound',
+      name: 'logisticsInbound',
+      component: () => import('@/views/LogisticsInboundView.vue'),
     },
     {
-      path: '/dashboard/finance',
-      name: 'financeDashboard',
-      component: () => import('@/views/FinanceDashBoardView.vue'),
+      path: '/logistics/inventory',
+      name: 'logisticsInventory',
+      component: () => import('@/views/LogisticsInventoryView.vue'),
     },
     {
-      path: '/dashboard/hr',
-      name: 'hrDashboard',
-      component: () => import('@/views/HRDashboardView.vue'),
+      path: '/logistics/delivery',
+      name: 'logisticsDelivery',
+      component: () => import('@/views/LogisticsDeliveryView.vue'),
     },
 
-    // ── Data pages ───────────────────────────────────────────────────
+    // ── 재무 / 회계 ──────────────────────────────────────────────────
+    {
+      path: '/finance/cost',
+      name: 'financeCost',
+      component: () => import('@/views/FinanceCostView.vue'),
+    },
+    {
+      path: '/finance/budget',
+      name: 'financeBudget',
+      component: () => import('@/views/FinanceBudgetView.vue'),
+    },
+    {
+      path: '/finance/profit',
+      name: 'financeProfit',
+      component: () => import('@/views/FinanceProfitView.vue'),
+    },
+
+    // ── 인사 ─────────────────────────────────────────────────────────
     {
       path: '/employees',
       name: 'employeeList',
@@ -109,14 +144,24 @@ const router = createRouter({
       component: () => import('@/views/EmployeeDetailView.vue'),
     },
     {
-      path: '/customers',
-      name: 'customerList',
-      component: () => import('@/views/CustomerListView.vue'),
+      path: '/hr/organization',
+      name: 'hrOrganization',
+      component: () => import('@/views/OrganizationView.vue'),
     },
     {
-      path: '/customers/:id',
-      name: 'customerDetail',
-      component: () => import('@/views/CustomerDetailView.vue'),
+      path: '/attendance',
+      name: 'attendance',
+      component: () => import('@/views/AttendanceView.vue'),
+    },
+    {
+      path: '/attendance/vacation',
+      name: 'vacation',
+      component: () => import('@/views/VacationView.vue'),
+    },
+    {
+      path: '/hr/salary',
+      name: 'salary',
+      component: () => import('@/views/SalaryView.vue'),
     },
 
     // ── Fallback ─────────────────────────────────────────────────────

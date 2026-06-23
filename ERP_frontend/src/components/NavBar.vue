@@ -32,8 +32,11 @@
             class="search-item"
             @mousedown.prevent="goTo(s.route)"
           >
-            <i :class="['bi', s.icon, 'me-2 text-primary']"></i>
-            <span class="small">{{ s.label }}</span>
+            <i :class="['bi', s.icon, 'me-2 text-primary', 'flex-shrink-0']"></i>
+            <div class="d-flex flex-column min-w-0">
+              <span class="small fw-semibold">{{ s.label }}</span>
+              <span v-if="s.group" class="search-group-hint">{{ s.group }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -104,27 +107,43 @@ const showNotifications = ref(false)
 const showSearchDrop = ref(false)
 
 const FEATURES = [
-  { label: '홈', icon: 'bi-house', route: '/', keywords: ['홈', 'home', '메인'] },
-  { label: '임직원', icon: 'bi-people', route: '/employees', keywords: ['임직원', '직원', 'employee', '사원'] },
-  { label: '고객사', icon: 'bi-building', route: '/customers', keywords: ['고객', '고객사', 'customer'] },
-  { label: '경영 대시보드', icon: 'bi-bar-chart-line', route: '/dashboard/management', keywords: ['경영', 'management', '대시보드'] },
-  { label: '영업 대시보드', icon: 'bi-graph-up-arrow', route: '/dashboard/sales', keywords: ['영업', 'sales'] },
-  { label: '구매 대시보드', icon: 'bi-cart3', route: '/dashboard/procurement', keywords: ['구매', 'procurement', '발주'] },
-  { label: '생산·물류 대시보드', icon: 'bi-gear', route: '/dashboard/production', keywords: ['생산', '물류', 'production'] },
-  { label: '재무/회계 대시보드', icon: 'bi-currency-exchange', route: '/dashboard/finance', keywords: ['재무', '회계', 'finance', '금융'] },
-  { label: '인사 대시보드', icon: 'bi-person-badge', route: '/dashboard/hr', keywords: ['인사', 'hr', '인사관리'] },
-  { label: '캘린더', icon: 'bi-calendar3', route: '/calendar', keywords: ['캘린더', '일정', 'calendar'] },
-  { label: 'Works', icon: 'bi-kanban', route: '/works', keywords: ['works', '업무', '태스크', 'task'] },
-  { label: '워크플로우', icon: 'bi-kanban', route: '/workflow', keywords: ['워크플로우', '칸반', 'workflow', 'kanban'] },
-  { label: '근태 관리', icon: 'bi-clock-history', route: '/attendance', keywords: ['근태', '출퇴근', 'attendance', '출근', '퇴근'] },
-  { label: '메모', icon: 'bi-journal-text', route: '/memo', keywords: ['메모', 'memo', '노트'] },
-  { label: '전자결재', icon: 'bi-file-earmark-check', route: '/eapproval', keywords: ['결재', '전자결재', 'approval', '기안'] },
+  { label: '홈', icon: 'bi-house', route: '/', group: '', keywords: ['홈', 'home', '메인'] },
+  // Works
+  { label: '캘린더', icon: 'bi-calendar3', route: '/calendar', group: 'Works', keywords: ['캘린더', '일정', 'calendar'] },
+  { label: '워크 플로우', icon: 'bi-diagram-3', route: '/workflow', group: 'Works', keywords: ['워크플로우', '칸반', 'workflow', 'kanban'] },
+  { label: 'Work 관리', icon: 'bi-list-check', route: '/works', group: 'Works', keywords: ['works', '업무', '태스크', 'task', '워크'] },
+  // 경영
+  { label: '경영 대시보드', icon: 'bi-speedometer2', route: '/dashboard/management', group: '경영', keywords: ['경영', '대시보드', 'management'] },
+  { label: '성과 분석', icon: 'bi-graph-up', route: '/management/performance', group: '경영', keywords: ['성과', '성과분석', 'performance'] },
+  { label: '경영 보고서', icon: 'bi-file-earmark-bar-graph', route: '/management/reports', group: '경영', keywords: ['보고서', 'report', '경영보고'] },
+  // 영업
+  { label: '거래처 관리', icon: 'bi-building', route: '/customers', group: '영업', keywords: ['거래처', '고객', '영업', 'customer'] },
+  { label: '영업 대시보드', icon: 'bi-speedometer2', route: '/dashboard/sales', group: '영업', keywords: ['영업', 'sales', '영업대시'] },
+  // 구매
+  { label: '구매 관리', icon: 'bi-cart-check', route: '/procurement/management', group: '구매', keywords: ['구매', 'procurement', '발주', '구매관리'] },
+  { label: '구매 대시보드', icon: 'bi-speedometer2', route: '/dashboard/procurement', group: '구매', keywords: ['구매', '구매대시보드'] },
+  // 물류
+  { label: '입고 관리', icon: 'bi-box-arrow-in-down', route: '/logistics/inbound', group: '물류', keywords: ['입고', '물류', 'inbound'] },
+  { label: '물품 관리', icon: 'bi-boxes', route: '/logistics/inventory', group: '물류', keywords: ['물품', '재고', 'inventory'] },
+  { label: '배송 관리', icon: 'bi-truck', route: '/logistics/delivery', group: '물류', keywords: ['배송', 'delivery', '물류'] },
+  // 재무/회계
+  { label: '원가 관리', icon: 'bi-calculator', route: '/finance/cost', group: '재무/회계', keywords: ['원가', '비용', 'cost', '재무'] },
+  { label: '예산 관리', icon: 'bi-piggy-bank', route: '/finance/budget', group: '재무/회계', keywords: ['예산', 'budget', '재무'] },
+  { label: '손익 관리', icon: 'bi-bar-chart', route: '/finance/profit', group: '재무/회계', keywords: ['손익', '수익', 'profit', '회계'] },
+  // 인사
+  { label: '인사 마스터', icon: 'bi-people', route: '/employees', group: '인사', keywords: ['직원', '임직원', '인사', 'employee', '사원'] },
+  { label: '조직 관리', icon: 'bi-diagram-2', route: '/hr/organization', group: '인사', keywords: ['조직', 'organization', '조직도'] },
+  { label: '근태 내역', icon: 'bi-calendar-check', route: '/attendance', group: '인사 › 근태관리', keywords: ['근태', '출퇴근', 'attendance', '출근', '퇴근'] },
+  { label: '휴가 관리', icon: 'bi-calendar-minus', route: '/attendance/vacation', group: '인사 › 근태관리', keywords: ['휴가', 'vacation', '연차'] },
+  { label: '급여 관리', icon: 'bi-cash-coin', route: '/hr/salary', group: '인사', keywords: ['급여', '임금', 'salary', '월급'] },
 ]
 
 const searchSuggestions = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
-  if (!q) return FEATURES.slice(0, 6)
-  return FEATURES.filter((f) => f.keywords.some((k) => k.includes(q))).slice(0, 6)
+  if (!q) return FEATURES.slice(0, 7)
+  return FEATURES.filter((f) =>
+    f.keywords.some((k) => k.includes(q)) || f.label.toLowerCase().includes(q) || (f.group && f.group.toLowerCase().includes(q))
+  ).slice(0, 8)
 })
 
 const user = computed(() => authStore.user)
@@ -230,6 +249,11 @@ async function handleLogout() {
 }
 .search-item:last-child { border-bottom: none; }
 .search-item:hover { background: #f0f9ff; }
+.search-group-hint {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  line-height: 1.2;
+}
 
 .notification-dropdown {
   position: absolute;

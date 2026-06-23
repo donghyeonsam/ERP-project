@@ -7,3 +7,10 @@ export const employeesApi = {
   orgChart: () => http.get('employees/org-chart/'),
   territories: () => http.get('employees/territories/'),
 }
+
+export const attendanceApi = {
+  today: () => http.get('employees/attendance/today/'),
+  checkin: (time) => http.patch('employees/attendance/today/', { checkin_time: time }),
+  checkout: (time) => http.patch('employees/attendance/today/', { checkout_time: time }),
+  list: (month) => http.get(`employees/attendance/${month ? `?month=${month}` : ''}`),
+}

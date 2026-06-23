@@ -11,8 +11,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 
-from .models import Employee, EmployeeTerritory
-from .serializers import EmployeeSerializer, EmployeeTerritorySerializer
+from .models import Employee, EmployeeTerritory, Attendance
+from .serializers import EmployeeSerializer, EmployeeTerritorySerializer, AttendanceSerializer
 
 
 # ---------------------------------------------------------------------
@@ -37,11 +37,21 @@ def get_level(employee):
 def current_employee(request):
     """
     로그인한 JWT 사용자(request.user) ↔ Employee 연결.
-    ※ User 와 Employee 를 어떻게 연결했는지에 맞춰 이 함수만 고치면 됨.
-      예) Employee 에 OneToOneField(User, related_name='employee') 가 있으면
-          request.user.employee 로 접근.
+    정상 등록 경로: EmployeeRegisterSerializer.custom_signup 에서 Employee.user 연결.
+    폴백: user와 연결된 Employee가 없으면 최소 Employee 레코드를 자동 생성한다.
+    (슈퍼유저·테스트 계정 등 정식 등록 절차를 거치지 않은 계정 대비)
     """
-    return getattr(request.user, 'employee', None)
+    emp = getattr(request.user, 'employee', None)
+    if emp is None:
+        username = getattr(request.user, 'username', None) or 'user'
+        emp, _ = Employee.objects.get_or_create(
+            user=request.user,
+            defaults={
+                'lastname': username[:1],
+                'firstname': username[1:] if len(username) > 1 else username,
+            },
+        )
+    return emp
 
 
 # =====================================================================
@@ -148,3 +158,86 @@ def employee_territory_list(request):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# =====================================================================
+# Attendance — 근태 CRUD
+# =====================================================================
+@api_view(['GET', 'POST'])
+def attendance_list(request):
+    emp = current_employee(request)
+    if emp is None:
+        return Response({'detail': '사원 정보를 찾을 수 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+    if request.method == 'GET':
+        qs = Attendance.objects.filter(employee=emp).order_by('-date')
+        # ?month=2026-06 형태로 월별 필터
+        month = request.query_params.get('month')
+        if month:
+            try:
+                year, m = month.split('-')
+                qs = qs.filter(date__year=int(year), date__month=int(m))
+            except ValueError:
+                pass
+        return Response(AttendanceSerializer(qs, many=True).data)
+
+    # POST: 오늘 근태 레코드 생성(없으면) 또는 체크인 처리
+    from django.utils import timezone
+    import datetime
+    today = timezone.localdate()
+
+    data = request.data.copy()
+    data['employee'] = emp.pk
+    if 'date' not in data:
+        data['date'] = str(today)
+
+    # 이미 오늘 레코드가 있으면 기존 객체 반환 (중복 방지)
+    obj, created = Attendance.objects.get_or_create(
+        employee=emp,
+        date=data['date'],
+        defaults={'checkin_time': data.get('checkin_time'), 'status': data.get('status', '정상')}
+    )
+    if not created and data.get('checkin_time') and not obj.checkin_time:
+        obj.checkin_time = data['checkin_time']
+        obj.save()
+    return Response(AttendanceSerializer(obj).data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+@api_view(['GET', 'PUT', 'PATCH'])
+def attendance_today(request):
+    """오늘 날짜 근태 조회 / 업데이트 (출근·퇴근 시간 기록용)"""
+    emp = current_employee(request)
+    if emp is None:
+        return Response({'detail': '사원 정보를 찾을 수 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+    from django.utils import timezone
+    today = timezone.localdate()
+    obj, _ = Attendance.objects.get_or_create(employee=emp, date=today)
+
+    if request.method == 'GET':
+        return Response(AttendanceSerializer(obj).data)
+
+    serializer = AttendanceSerializer(obj, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+def attendance_detail(request, pk):
+    emp = current_employee(request)
+    obj = get_object_or_404(Attendance, pk=pk, employee=emp)
+
+    if request.method == 'GET':
+        return Response(AttendanceSerializer(obj).data)
+
+    if request.method == 'PUT':
+        serializer = AttendanceSerializer(obj, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    obj.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)

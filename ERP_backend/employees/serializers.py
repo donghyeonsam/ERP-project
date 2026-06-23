@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from dj_rest_auth.registration.serializers import RegisterSerializer
-from .models import Employee, EmployeeTerritory
+from .models import Employee, EmployeeTerritory, Attendance
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
@@ -34,6 +34,18 @@ class EmployeeTerritorySerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeTerritory
         fields = '__all__'
+
+
+class AttendanceSerializer(serializers.ModelSerializer):
+    employee_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Attendance
+        fields = ['id', 'employee', 'employee_name', 'date', 'checkin_time', 'checkout_time', 'status', 'note']
+        read_only_fields = ['id']
+
+    def get_employee_name(self, obj):
+        return f"{obj.employee.lastname}{obj.employee.firstname}"
 
 
 class EmployeeRegisterSerializer(RegisterSerializer):

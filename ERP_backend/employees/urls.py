@@ -15,4 +15,9 @@ urlpatterns = [
     path('org-chart/', views.employee_org_chart),
     path('territories/', views.employee_territory_list),
     path('<int:pk>/', views.employee_detail),
+
+    # 근태
+    path('attendance/', views.attendance_list, name='attendance_list'),
+    path('attendance/today/', views.attendance_today, name='attendance_today'),
+    path('attendance/<int:pk>/', views.attendance_detail, name='attendance_detail'),
 ]
