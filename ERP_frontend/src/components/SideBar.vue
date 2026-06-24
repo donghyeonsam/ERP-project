@@ -95,7 +95,7 @@ const menuGroups = [
     items: [
       { label: '경영 대시보드', icon: 'bi-speedometer2', to: '/dashboard/management' },
       { label: '성과 분석', icon: 'bi-graph-up', to: '/management/performance' },
-      { label: '경영 보고서', icon: 'bi-file-earmark-bar-graph', to: '/management/reports' },
+      { label: 'AI 예측', icon: 'bi-graph-up-arrow', to: '/management/reports' },
     ],
   },
   {

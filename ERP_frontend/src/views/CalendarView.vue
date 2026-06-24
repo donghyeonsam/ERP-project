@@ -31,6 +31,15 @@
           <span class="cal-section-title">내 캘린더</span>
           <button class="btn-icon" @click="showMyCalCreate = !showMyCalCreate"><i class="bi bi-pencil-square" style="font-size:0.75rem"></i></button>
         </div>
+        <div class="cal-check-item">
+          <label class="d-flex align-items-center gap-2 small" style="cursor:pointer">
+            <input type="checkbox" v-model="showTaskEvents" class="d-none" />
+            <span class="cal-dot" :style="`background:${showTaskEvents ? '#16a34a' : '#ccc'};border-color:#16a34a`" @click="showTaskEvents = !showTaskEvents">
+              <i v-if="showTaskEvents" class="bi bi-check text-white" style="font-size:0.6rem"></i>
+            </span>
+            업무 마감일 (Work)
+          </label>
+        </div>
         <div v-for="cal in myCalendars" :key="cal.id" class="cal-check-item">
           <label class="d-flex align-items-center gap-2 small" :style="`cursor:pointer`">
             <input type="checkbox" v-model="cal.visible" class="d-none" />
@@ -119,8 +128,9 @@
                   :title="span.event.title"
                   @click.stop="selectEvent(span.event)"
                 >
-                  <span v-if="span.isStart" class="event-span-title">
-                    <i v-if="span.event.is_all_day" class="bi bi-circle-fill me-1" style="font-size:0.35rem;vertical-align:middle"></i>
+                  <span v-if="span.isStart" class="event-span-title" :class="{ 'text-decoration-line-through': span.event.status === 'DONE' }">
+                    <i v-if="span.event.source === 'task'" class="bi bi-kanban me-1" style="font-size:0.65rem;vertical-align:middle"></i>
+                    <i v-else-if="span.event.is_all_day" class="bi bi-circle-fill me-1" style="font-size:0.35rem;vertical-align:middle"></i>
                     {{ span.event.title }}
                   </span>
                 </div>
@@ -148,16 +158,27 @@
               <div class="fw-bold" style="font-size:1.1rem">{{ evDay(ev) }}</div>
               <div class="text-muted small">{{ evMonth(ev) }}</div>
             </div>
-            <div class="event-color-bar" :style="`background:${ev.color || '#3b82f6'}`"></div>
+            <div class="event-color-bar" :style="`background:${eventBgColor(ev)}`"></div>
             <div class="flex-grow-1">
-              <div class="fw-semibold small">{{ ev.title }}</div>
+              <div class="fw-semibold small" :class="{ 'text-decoration-line-through text-muted': ev.status === 'DONE' }">
+                <i v-if="ev.source === 'task'" class="bi bi-kanban me-1 text-muted"></i>{{ ev.title }}
+              </div>
               <div v-if="ev.description" class="text-muted" style="font-size:0.75rem">{{ ev.description }}</div>
               <div class="text-muted" style="font-size:0.72rem">
                 <template v-if="ev.is_all_day">종일</template>
                 <template v-else>{{ fmtTime(ev.start_time) }} – {{ fmtTime(ev.end_time) }}</template>
               </div>
             </div>
-            <button class="btn btn-sm btn-outline-danger py-0 px-2 align-self-center" style="font-size:0.7rem" @click.stop="deleteEvent(ev)">
+            <RouterLink
+              v-if="ev.source === 'task'"
+              :to="`/works/${ev.sourceId}`"
+              class="btn btn-sm btn-outline-primary py-0 px-2 align-self-center"
+              style="font-size:0.7rem"
+              @click.stop
+            >
+              <i class="bi bi-box-arrow-up-right"></i>
+            </RouterLink>
+            <button v-else class="btn btn-sm btn-outline-danger py-0 px-2 align-self-center" style="font-size:0.7rem" @click.stop="deleteEvent(ev)">
               <i class="bi bi-trash"></i>
             </button>
           </div>
@@ -226,11 +247,17 @@
   <Teleport to="body">
     <div v-if="selectedEv" class="modal-backdrop-custom" @click.self="selectedEv = null">
       <div class="modal-panel shadow-lg" style="max-width:360px">
-        <div class="modal-panel-header" :style="`background:${selectedEv.color || '#3b82f6'};color:#fff`">
-          <span class="fw-bold small">{{ selectedEv.title }}</span>
+        <div class="modal-panel-header" :style="`background:${eventBgColor(selectedEv)};color:#fff`">
+          <span class="fw-bold small">
+            <i v-if="selectedEv.source === 'task'" class="bi bi-kanban me-1"></i>{{ selectedEv.title }}
+          </span>
           <button class="btn-close-panel" style="color:#fff" @click="selectedEv = null"><i class="bi bi-x-lg"></i></button>
         </div>
         <div class="modal-panel-body">
+          <div v-if="selectedEv.source === 'task'" class="mb-2">
+            <span class="badge bg-light text-dark border">Work 업무</span>
+            <span v-if="selectedEv.status === 'DONE'" class="badge bg-success ms-1">완료</span>
+          </div>
           <div class="mb-2 small">
             <i class="bi bi-clock me-2 text-muted"></i>
             <template v-if="selectedEv.is_all_day">종일</template>
@@ -241,7 +268,10 @@
           </div>
         </div>
         <div class="modal-panel-footer d-flex gap-2">
-          <button class="btn btn-sm btn-outline-danger flex-grow-1" @click="deleteEvent(selectedEv)">
+          <RouterLink v-if="selectedEv.source === 'task'" :to="`/works/${selectedEv.sourceId}`" class="btn btn-sm btn-outline-primary flex-grow-1">
+            <i class="bi bi-box-arrow-up-right me-1"></i>업무 상세보기
+          </RouterLink>
+          <button v-else class="btn btn-sm btn-outline-danger flex-grow-1" @click="deleteEvent(selectedEv)">
             <i class="bi bi-trash me-1"></i>삭제
           </button>
           <button class="btn btn-sm btn-outline-secondary flex-grow-1" @click="selectedEv = null">닫기</button>
@@ -253,6 +283,7 @@
 
 <script setup>
 import { ref, computed, reactive, onMounted } from 'vue'
+import { RouterLink } from 'vue-router'
 import { useWorksStore } from '@/stores/works'
 import { useAuthStore } from '@/stores/auth'
 
@@ -298,7 +329,31 @@ function addMyCalendar() {
 }
 
 // ── 이벤트 데이터 ────────────────────────────────────────────────────
-const events = computed(() => worksStore.calendarEvents)
+// Work관리(Task)의 마감일을 캘린더 일정으로 변환해 함께 표시 (캘린더 ↔ Work 연동)
+const showTaskEvents = ref(true)
+const TASK_PRIORITY_COLOR = { HIGH: '#ef4444', MEDIUM: '#f59e0b', LOW: '#64748b' }
+
+const taskEvents = computed(() =>
+  worksStore.tasks
+    .filter((t) => t.due_date)
+    .map((t) => ({
+      id: `task-${t.id}`,
+      title: t.title,
+      description: t.content,
+      start_time: `${t.due_date}T00:00:00`,
+      end_time: `${t.due_date}T23:59:59`,
+      is_all_day: true,
+      color: TASK_PRIORITY_COLOR[t.priority] || '#16a34a',
+      source: 'task',
+      sourceId: t.id,
+      status: t.status,
+    }))
+)
+
+const events = computed(() => [
+  ...worksStore.calendarEvents.map((e) => ({ ...e, source: 'event' })),
+  ...(showTaskEvents.value ? taskEvents.value : []),
+])
 
 const monthEvents = computed(() => {
   const y = calDate.value.getFullYear(), m = calDate.value.getMonth()
@@ -519,6 +574,7 @@ function selectEvent(ev) {
 }
 
 async function deleteEvent(ev) {
+  if (ev.source === 'task') return // Work관리에서 등록된 업무는 캘린더에서 직접 삭제하지 않고 업무 상세에서 처리
   if (!confirm(`"${ev.title}" 일정을 삭제하시겠습니까?`)) return
   try {
     await worksStore.deleteCalendarEvent(ev.id)
@@ -543,6 +599,7 @@ function fmtDatetime(dt) {
 
 const EVENT_PALETTE = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#f97316', '#06b6d4', '#14b8a6']
 function eventBgColor(ev) {
+  if (ev?.color) return ev.color
   // stable color per event: use ID hash to pick from palette so overlapping events differ
   const id = ev?.id ?? 0
   const idx = typeof id === 'number' ? id : String(id).split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) & 0xffff, 0)
@@ -560,7 +617,11 @@ function eventTextColor(bg) {
 
 onMounted(async () => {
   loading.value = true
-  try { await worksStore.fetchCalendarEvents() } finally { loading.value = false }
+  try {
+    await Promise.all([worksStore.fetchCalendarEvents(), worksStore.fetchTasks()])
+  } finally {
+    loading.value = false
+  }
 })
 </script>
 

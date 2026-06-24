@@ -20,13 +20,23 @@
             <div class="col-6">
               <label class="form-label small fw-semibold">상태</label>
               <select v-model="form.status" class="form-select">
-                <option>진행중</option><option>대기</option><option>완료</option>
+                <option value="TODO">대기</option>
+                <option value="IN_PROGRESS">진행중</option>
+                <option value="DONE">완료</option>
               </select>
             </div>
             <div class="col-6">
               <label class="form-label small fw-semibold">마감일</label>
               <input v-model="form.due_date" type="date" class="form-control" />
             </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">우선순위</label>
+            <select v-model="form.priority" class="form-select">
+              <option value="HIGH">높음</option>
+              <option value="MEDIUM">보통</option>
+              <option value="LOW">낮음</option>
+            </select>
           </div>
           <div v-if="errorMsg" class="alert alert-danger py-2 small">{{ errorMsg }}</div>
           <div class="d-flex gap-2">
@@ -55,7 +65,7 @@ const errorMsg = ref('')
 
 const currentEmployeeId = computed(() => authStore.user?.employeeid)
 
-const form = ref({ title: '', content: '', status: '진행중', due_date: '' })
+const form = ref({ title: '', content: '', status: 'TODO', priority: 'MEDIUM', due_date: '' })
 
 async function submit() {
   if (!form.value.title.trim()) {
@@ -73,8 +83,10 @@ async function submit() {
       title: form.value.title,
       content: form.value.content || '-',
       status: form.value.status,
+      priority: form.value.priority,
       due_date: form.value.due_date || null,
       assignee: currentEmployeeId.value,
+      creator: currentEmployeeId.value,
     }
     await worksStore.createTask(payload)
     router.push('/workflow')

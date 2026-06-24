@@ -11,7 +11,9 @@
       <div class="card-body py-2 d-flex gap-2 flex-wrap">
         <select v-model="filterStatus" class="form-select form-select-sm" style="width:auto">
           <option value="">전체 상태</option>
-          <option>진행중</option><option>완료</option><option>대기</option><option>지연</option>
+          <option value="TODO">대기</option>
+          <option value="IN_PROGRESS">진행중</option>
+          <option value="DONE">완료</option>
         </select>
         <input v-model="search" type="text" class="form-control form-control-sm" placeholder="제목 검색..." style="max-width:200px" />
       </div>
@@ -22,10 +24,11 @@
       <div v-if="filtered.length === 0" class="text-center text-muted py-5">업무가 없습니다</div>
       <div v-for="task in filtered" :key="task.id" class="card erp-card mb-2 task-card" @click="goDetail(task.id)">
         <div class="card-body py-2 d-flex align-items-center gap-3">
-          <span :class="['badge', statusClass(task.status)]">{{ task.status || '진행중' }}</span>
+          <span :class="['badge', statusClass(task.status)]">{{ statusLabel(task.status) }}</span>
+          <span v-if="isOverdue(task)" class="badge bg-danger">지연</span>
           <div class="flex-grow-1">
             <div class="fw-semibold">{{ task.title }}</div>
-            <div class="text-muted small">{{ task.description || '' }}</div>
+            <div class="text-muted small">{{ task.content || '' }}</div>
           </div>
           <div class="text-end">
             <div class="text-muted small">마감: {{ fmtDate(task.due_date) }}</div>
@@ -56,7 +59,14 @@ const filtered = computed(() => {
 })
 
 function statusClass(s) {
-  return { '진행중': 'bg-primary', '완료': 'bg-success', '대기': 'bg-secondary', '지연': 'bg-danger' }[s] || 'bg-secondary'
+  return { TODO: 'bg-secondary', IN_PROGRESS: 'bg-primary', DONE: 'bg-success' }[s] || 'bg-secondary'
+}
+function statusLabel(s) {
+  return { TODO: '대기', IN_PROGRESS: '진행중', DONE: '완료' }[s] || s || '대기'
+}
+function isOverdue(task) {
+  if (!task.due_date || task.status === 'DONE') return false
+  return new Date(task.due_date) < new Date(new Date().toDateString())
 }
 function fmtDate(d) { return d ? new Date(d).toLocaleDateString('ko-KR') : '-' }
 function goDetail(id) { router.push(`/works/${id}`) }
