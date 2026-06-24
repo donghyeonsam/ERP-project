@@ -52,6 +52,13 @@ const router = createRouter({
       component: () => import('@/views/WorkDetailView.vue'),
     },
 
+    // ── 접근 거부 ────────────────────────────────────────────────────
+    {
+      path: '/access-denied',
+      name: 'accessDenied',
+      component: () => import('@/views/AccessDeniedView.vue'),
+    },
+
     // ── 경영 ─────────────────────────────────────────────────────────
     {
       path: '/dashboard/management',
@@ -62,6 +69,7 @@ const router = createRouter({
       path: '/management/performance',
       name: 'managementPerformance',
       component: () => import('@/views/ManagementPerformanceView.vue'),
+      meta: { requiresLevel: 4 },
     },
     {
       path: '/management/reports',
@@ -157,6 +165,7 @@ const router = createRouter({
       path: '/hr/salary',
       name: 'salary',
       component: () => import('@/views/SalaryView.vue'),
+      meta: { requiresHRorLevel5: true },
     },
 
     // ── Fallback ─────────────────────────────────────────────────────
@@ -172,6 +181,20 @@ router.beforeEach(async (to) => {
     const ok = await auth.restoreSession()
     if (!ok) return { name: 'login' }
   }
+
+  const user = auth.user
+  const level = user?.level || 0
+  const department = user?.department || ''
+
+  if (to.meta.requiresLevel) {
+    if (level < to.meta.requiresLevel) return { name: 'accessDenied' }
+  }
+
+  if (to.meta.requiresHRorLevel5) {
+    const allowed = level >= 5 || department === '인사팀'
+    if (!allowed) return { name: 'accessDenied' }
+  }
+
   return true
 })
 

@@ -13,8 +13,8 @@
             <input v-model="form.title" type="text" class="form-control" required />
           </div>
           <div class="mb-3">
-            <label class="form-label small fw-semibold">설명</label>
-            <textarea v-model="form.description" class="form-control" rows="4"></textarea>
+            <label class="form-label small fw-semibold">업무 내용</label>
+            <textarea v-model="form.content" class="form-control" rows="4" placeholder="업무 내용을 입력하세요"></textarea>
           </div>
           <div class="row g-2 mb-3">
             <div class="col-6">
@@ -42,24 +42,50 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useWorksStore } from '@/stores/works'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const worksStore = useWorksStore()
+const authStore = useAuthStore()
 const loading = ref(false)
 const errorMsg = ref('')
-const form = ref({ title: '', description: '', status: '진행중', due_date: '' })
+
+const currentEmployeeId = computed(() => authStore.user?.employeeid)
+
+const form = ref({ title: '', content: '', status: '진행중', due_date: '' })
 
 async function submit() {
+  if (!form.value.title.trim()) {
+    errorMsg.value = '제목을 입력하세요.'
+    return
+  }
+  if (!currentEmployeeId.value) {
+    errorMsg.value = '로그인 정보를 확인할 수 없습니다. 다시 로그인해 주세요.'
+    return
+  }
   loading.value = true
   errorMsg.value = ''
   try {
-    await worksStore.createTask(form.value)
-    router.push('/works')
+    const payload = {
+      title: form.value.title,
+      content: form.value.content || '-',
+      status: form.value.status,
+      due_date: form.value.due_date || null,
+      assignee: currentEmployeeId.value,
+    }
+    await worksStore.createTask(payload)
+    router.push('/workflow')
   } catch (e) {
-    errorMsg.value = '업무 등록에 실패했습니다.'
+    const detail = e?.response?.data
+    if (detail && typeof detail === 'object') {
+      const msgs = Object.entries(detail).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+      errorMsg.value = msgs.join(' / ')
+    } else {
+      errorMsg.value = '업무 등록에 실패했습니다.'
+    }
   } finally {
     loading.value = false
   }

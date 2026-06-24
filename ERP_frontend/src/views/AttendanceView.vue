@@ -127,7 +127,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="rec in filteredAdminRows" :key="rec.id">
+              <tr v-for="rec in pagedRows" :key="rec.id">
                 <td class="small text-muted">{{ rec.date }}</td>
                 <td class="small text-muted">{{ rec.employee }}</td>
                 <td class="small fw-semibold">{{ rec.employee_name }}</td>
@@ -141,11 +141,19 @@
                   <button class="btn-icon" title="수정" @click="openManualModal(rec)"><i class="bi bi-pencil"></i></button>
                 </td>
               </tr>
-              <tr v-if="filteredAdminRows.length === 0">
+              <tr v-if="pagedRows.length === 0">
                 <td colspan="10" class="text-center text-muted small py-4">조건에 맞는 근태 내역이 없습니다</td>
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+      <div class="card-footer d-flex justify-content-between align-items-center py-2 bg-white">
+        <span class="small text-muted">총 {{ filteredAdminRows.length.toLocaleString('ko-KR') }}건 중 {{ filteredAdminRows.length === 0 ? 0 : pageStartIndex + 1 }}-{{ pageEndIndex }}</span>
+        <div class="d-flex gap-1 align-items-center">
+          <button class="btn btn-sm btn-outline-secondary" :disabled="currentPage === 1" @click="currentPage--"><i class="bi bi-chevron-left"></i></button>
+          <span class="small mx-2">{{ currentPage }} / {{ totalPages }}</span>
+          <button class="btn btn-sm btn-outline-secondary" :disabled="currentPage === totalPages" @click="currentPage++"><i class="bi bi-chevron-right"></i></button>
         </div>
       </div>
     </div>
@@ -211,7 +219,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { attendanceApi } from '@/api/employees'
 import { useAuthStore } from '@/stores/auth'
 import { useEmployeeStore } from '@/stores/employees'
@@ -324,10 +332,21 @@ const filteredAdminRows = computed(() => {
   return list
 })
 
-function applyFilters() { Object.assign(applied, draft) }
+// ── 페이지네이션 ──
+const pageSize = 15
+const currentPage = ref(1)
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredAdminRows.value.length / pageSize)))
+const pageStartIndex = computed(() => (currentPage.value - 1) * pageSize)
+const pageEndIndex = computed(() => Math.min(filteredAdminRows.value.length, pageStartIndex.value + pageSize))
+const pagedRows = computed(() => filteredAdminRows.value.slice(pageStartIndex.value, pageEndIndex.value))
+
+watch(filteredAdminRows, () => { currentPage.value = 1 })
+
+function applyFilters() { Object.assign(applied, draft); currentPage.value = 1 }
 function resetFilters() {
   draft.name = ''; draft.department = ''; draft.date = ''; draft.status = ''
   applied.name = ''; applied.department = ''; applied.date = ''; applied.status = ''
+  currentPage.value = 1
 }
 
 const kpi = computed(() => {
