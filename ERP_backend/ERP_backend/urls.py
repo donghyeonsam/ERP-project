@@ -29,4 +29,7 @@ urlpatterns = [
     path("api/v1/finance/",     include("finance.urls")),
     path("api/v1/messages/",    include("messages.urls")),
     path("api/v1/works/",       include("works.urls")),
+    path("api/v1/logistics/",   include("logistics.urls")),
+    path("api/v1/inventory/",   include("inventory.urls")),
+    path("api/v1/payroll/",     include("payroll.urls")),
 ]

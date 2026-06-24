@@ -120,20 +120,18 @@ const FEATURES = [
   { label: '거래처 관리', icon: 'bi-building', route: '/customers', group: '영업', keywords: ['거래처', '고객', '영업', 'customer'] },
   { label: '영업 대시보드', icon: 'bi-speedometer2', route: '/dashboard/sales', group: '영업', keywords: ['영업', 'sales', '영업대시'] },
   // 구매
-  { label: '구매 관리', icon: 'bi-cart-check', route: '/procurement/management', group: '구매', keywords: ['구매', 'procurement', '발주', '구매관리'] },
-  { label: '구매 대시보드', icon: 'bi-speedometer2', route: '/dashboard/procurement', group: '구매', keywords: ['구매', '구매대시보드'] },
+  { label: 'BOM 관리', icon: 'bi-diagram-3', route: '/dashboard/procurement', group: '구매', keywords: ['BOM', '레시피', '배합', 'bom'] },
   // 물류
   { label: '입고 관리', icon: 'bi-box-arrow-in-down', route: '/logistics/inbound', group: '물류', keywords: ['입고', '물류', 'inbound'] },
-  { label: '물품 관리', icon: 'bi-boxes', route: '/logistics/inventory', group: '물류', keywords: ['물품', '재고', 'inventory'] },
+  { label: '재고 관리', icon: 'bi-boxes', route: '/logistics/inventory', group: '물류', keywords: ['물품', '재고', 'inventory', '실사', '유통기한'] },
   { label: '배송 관리', icon: 'bi-truck', route: '/logistics/delivery', group: '물류', keywords: ['배송', 'delivery', '물류'] },
   // 재무/회계
-  { label: '원가 관리', icon: 'bi-calculator', route: '/finance/cost', group: '재무/회계', keywords: ['원가', '비용', 'cost', '재무'] },
+  { label: '채권채무관리', icon: 'bi-receipt-cutoff', route: '/finance/cost', group: '재무/회계', keywords: ['채권', '채무', '매출채권', '매입채무', '연체', 'receivable', 'payable', '재무'] },
   { label: '예산 관리', icon: 'bi-piggy-bank', route: '/finance/budget', group: '재무/회계', keywords: ['예산', 'budget', '재무'] },
-  { label: '손익 관리', icon: 'bi-bar-chart', route: '/finance/profit', group: '재무/회계', keywords: ['손익', '수익', 'profit', '회계'] },
   // 인사
   { label: '인사 마스터', icon: 'bi-people', route: '/employees', group: '인사', keywords: ['직원', '임직원', '인사', 'employee', '사원'] },
   { label: '조직 관리', icon: 'bi-diagram-2', route: '/hr/organization', group: '인사', keywords: ['조직', 'organization', '조직도'] },
-  { label: '근태 내역', icon: 'bi-calendar-check', route: '/attendance', group: '인사 › 근태관리', keywords: ['근태', '출퇴근', 'attendance', '출근', '퇴근'] },
+  { label: '근태 관리', icon: 'bi-calendar-check', route: '/attendance', group: '인사 › 근태관리', keywords: ['근태', '출퇴근', 'attendance', '출근', '퇴근'] },
   { label: '휴가 관리', icon: 'bi-calendar-minus', route: '/attendance/vacation', group: '인사 › 근태관리', keywords: ['휴가', 'vacation', '연차'] },
   { label: '급여 관리', icon: 'bi-cash-coin', route: '/hr/salary', group: '인사', keywords: ['급여', '임금', 'salary', '월급'] },
 ]

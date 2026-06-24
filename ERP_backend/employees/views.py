@@ -10,9 +10,10 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
+from django.db import models
 
-from .models import Employee, EmployeeTerritory, Attendance
-from .serializers import EmployeeSerializer, EmployeeTerritorySerializer, AttendanceSerializer
+from .models import Employee, EmployeeTerritory, Attendance, LeaveRequest, ANNUAL_LEAVE_DAYS
+from .serializers import EmployeeSerializer, EmployeeTerritorySerializer, AttendanceSerializer, LeaveRequestSerializer
 
 
 # ---------------------------------------------------------------------
@@ -161,6 +162,55 @@ def employee_territory_list(request):
 
 
 # =====================================================================
+# Attendance(전사) — 근태관리 화면용 전체 조회 / 수동등록
+# =====================================================================
+@api_view(['GET'])
+def attendance_admin_list(request):
+    """전사 근태 목록 (이름/사번/부서/날짜/상태 필터). 조회는 전 직원 가능."""
+    qs = Attendance.objects.select_related('employee').all()
+
+    name = request.query_params.get('name')
+    if name:
+        if name.isdigit():
+            qs = qs.filter(employee__employeeid=int(name))
+        else:
+            qs = qs.filter(models.Q(employee__lastname__icontains=name) | models.Q(employee__firstname__icontains=name))
+
+    department = request.query_params.get('department')
+    if department:
+        qs = qs.filter(employee__department=department)
+
+    date_param = request.query_params.get('date')
+    if date_param:
+        qs = qs.filter(date=date_param)
+
+    status_param = request.query_params.get('status')
+    if status_param:
+        qs = qs.filter(status=status_param)
+
+    return Response(AttendanceSerializer(qs.order_by('-date', 'employee_id'), many=True).data)
+
+
+@api_view(['POST'])
+def attendance_manual_create(request):
+    """수동 등록 — 레벨 4 이상(과장급 이상)만 가능. 서버에서도 강제."""
+    requester = current_employee(request)
+    if get_level(requester) < 4:
+        return Response({'detail': '수동 등록 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+    employee_id = request.data.get('employee')
+    target = get_object_or_404(Employee, pk=employee_id)
+    date = request.data.get('date')
+
+    obj, created = Attendance.objects.get_or_create(employee=target, date=date)
+    serializer = AttendanceSerializer(obj, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# =====================================================================
 # Attendance — 근태 CRUD
 # =====================================================================
 @api_view(['GET', 'POST'])
@@ -182,9 +232,9 @@ def attendance_list(request):
         return Response(AttendanceSerializer(qs, many=True).data)
 
     # POST: 오늘 근태 레코드 생성(없으면) 또는 체크인 처리
-    from django.utils import timezone
+    # 주의: USE_TZ=False 라 timezone.localdate()는 naive datetime 에러를 낸다. date.today() 사용.
     import datetime
-    today = timezone.localdate()
+    today = datetime.date.today()
 
     data = request.data.copy()
     data['employee'] = emp.pk
@@ -210,8 +260,8 @@ def attendance_today(request):
     if emp is None:
         return Response({'detail': '사원 정보를 찾을 수 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
-    from django.utils import timezone
-    today = timezone.localdate()
+    import datetime
+    today = datetime.date.today()
     obj, _ = Attendance.objects.get_or_create(employee=emp, date=today)
 
     if request.method == 'GET':
@@ -241,3 +291,86 @@ def attendance_detail(request, pk):
 
     obj.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# =====================================================================
+# LeaveRequest — 휴가 신청 / 승인 / 반려
+# =====================================================================
+@api_view(['GET', 'POST'])
+def leave_request_list(request):
+    if request.method == 'GET':
+        qs = LeaveRequest.objects.select_related('employee', 'approver').all()
+
+        name = request.query_params.get('name')
+        if name:
+            qs = qs.filter(models.Q(employee__lastname__icontains=name) | models.Q(employee__firstname__icontains=name))
+
+        department = request.query_params.get('department')
+        if department:
+            qs = qs.filter(employee__department=department)
+
+        status_param = request.query_params.get('status')
+        if status_param:
+            qs = qs.filter(status=status_param)
+
+        return Response(LeaveRequestSerializer(qs, many=True).data)
+
+    # POST: 본인 명의로 휴가 신청 (level <= 3 도 가능 — 누구나 신청 가능)
+    emp = current_employee(request)
+    data = request.data.copy()
+    data['employee'] = emp.pk
+    serializer = LeaveRequestSerializer(data=data)
+    if serializer.is_valid():
+        serializer.save(employee=emp, status='대기')
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+def _process_leave_request(request, pk, new_status):
+    from django.utils import timezone
+
+    requester = current_employee(request)
+    if get_level(requester) < 4:
+        return Response({'detail': '승인/반려 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+    leave = get_object_or_404(LeaveRequest, pk=pk)
+    leave.status = new_status
+    leave.approver = requester
+    leave.processed_at = timezone.now()
+    leave.save()
+    return Response(LeaveRequestSerializer(leave).data)
+
+
+@api_view(['POST'])
+def leave_request_approve(request, pk):
+    return _process_leave_request(request, pk, '승인')
+
+
+@api_view(['POST'])
+def leave_request_reject(request, pk):
+    return _process_leave_request(request, pk, '반려')
+
+
+@api_view(['GET'])
+def leave_balance_list(request):
+    """직원별 연차 잔여 현황 — 연차 기준일수(15일) - 올해 승인된 연차 사용일수"""
+    import datetime
+    year = datetime.date.today().year
+
+    employees = Employee.objects.exclude(title__isnull=True).order_by('employeeid')
+    rows = []
+    for emp in employees:
+        used = LeaveRequest.objects.filter(
+            employee=emp, leave_type='연차', status='승인', start_date__year=year,
+        )
+        used_days = sum(float(r.days) for r in used)
+        rows.append({
+            'employeeid': emp.employeeid,
+            'name': f'{emp.lastname}{emp.firstname}',
+            'department': emp.department,
+            'title': emp.title,
+            'total_days': ANNUAL_LEAVE_DAYS,
+            'used_days': used_days,
+            'remaining_days': ANNUAL_LEAVE_DAYS - used_days,
+        })
+    return Response(rows)

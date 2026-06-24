@@ -1,5 +1,20 @@
 from django.db import models
 
+
+class Budget(models.Model):
+    id         = models.AutoField(primary_key=True)
+    period     = models.CharField(max_length=7)          # 'YYYY-MM', Expense와 동일 기준
+    costcenter = models.CharField(max_length=40)         # 부서 (Expense.costcenter와 매칭)
+    category   = models.CharField(max_length=40)         # 비용 항목 (Expense.category와 매칭)
+    amount     = models.DecimalField(max_digits=14, decimal_places=2)  # 편성 예산액
+    currency   = models.CharField(max_length=8, default="KRW")
+
+    class Meta:
+        db_table = "budget"
+        verbose_name = '예산'
+        verbose_name_plural = '예산 목록'
+
+
 class Expense(models.Model):
     id         = models.AutoField(primary_key=True)
     period     = models.CharField(max_length=7)          # 'YYYY-MM'

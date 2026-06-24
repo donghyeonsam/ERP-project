@@ -19,5 +19,13 @@ urlpatterns = [
     # 근태
     path('attendance/', views.attendance_list, name='attendance_list'),
     path('attendance/today/', views.attendance_today, name='attendance_today'),
+    path('attendance/admin/', views.attendance_admin_list, name='attendance_admin_list'),
+    path('attendance/manual/', views.attendance_manual_create, name='attendance_manual_create'),
     path('attendance/<int:pk>/', views.attendance_detail, name='attendance_detail'),
+
+    # 휴가
+    path('leave-requests/', views.leave_request_list, name='leave_request_list'),
+    path('leave-requests/<int:pk>/approve/', views.leave_request_approve, name='leave_request_approve'),
+    path('leave-requests/<int:pk>/reject/', views.leave_request_reject, name='leave_request_reject'),
+    path('leave-balances/', views.leave_balance_list, name='leave_balance_list'),
 ]

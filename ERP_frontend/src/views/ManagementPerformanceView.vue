@@ -22,10 +22,7 @@
           <div class="kpi-info">
             <div class="kpi-label text-muted">{{ kpi.label }}</div>
             <div class="kpi-value">{{ kpi.value }}</div>
-            <div class="kpi-trend" :class="kpi.trend >= 0 ? 'text-success' : 'text-danger'">
-              <i :class="kpi.trend >= 0 ? 'bi-arrow-up-right' : 'bi-arrow-down-right'" class="bi me-1"></i>
-              {{ kpi.trend >= 0 ? '+' : '' }}{{ kpi.trend }}% 전년 대비
-            </div>
+            <div class="kpi-trend text-muted">{{ kpi.sub }}</div>
           </div>
         </div>
       </div>
@@ -49,17 +46,22 @@
         <!-- 차트 영역 -->
         <div class="chart-section">
           <div class="d-flex align-items-center justify-content-between mb-3">
-            <span class="fw-semibold small">영업사원별 달성률 (백만원)</span>
+            <span class="fw-semibold small">영업사원별 달성률 (만원)</span>
             <div class="d-flex gap-2 small">
               <span class="legend-dot" style="background:#e2e8f0"></span><span class="text-muted me-2">목표</span>
               <span class="legend-dot" style="background:#3b82f6"></span><span class="text-muted">실적</span>
             </div>
           </div>
-          <Bar :data="chartData" :options="chartOptions" style="height:180px" />
+          <div class="chart-wrap">
+            <Bar :data="chartData" :options="chartOptions" />
+          </div>
         </div>
 
         <!-- 데이터 테이블 -->
-        <div class="table-section">
+        <div v-if="!perfRows.length" class="text-center text-muted py-5">
+          <span class="spinner-border spinner-border-sm me-2"></span>데이터를 불러오는 중입니다
+        </div>
+        <div v-else class="table-section">
           <table class="perf-table w-100">
             <thead>
               <tr>
@@ -69,16 +71,16 @@
                 </th>
                 <th>소속</th>
                 <th @click="sortBy('target')" class="sortable">
-                  목표(백만) <i :class="sortIcon('target')" class="bi ms-1"></i>
+                  목표(만원) <i :class="sortIcon('target')" class="bi ms-1"></i>
                 </th>
                 <th @click="sortBy('actual')" class="sortable">
-                  실적(백만) <i :class="sortIcon('actual')" class="bi ms-1"></i>
+                  실적(만원) <i :class="sortIcon('actual')" class="bi ms-1"></i>
                 </th>
                 <th @click="sortBy('rate')" class="sortable">
                   달성률(%) <i :class="sortIcon('rate')" class="bi ms-1"></i>
                 </th>
                 <th @click="sortBy('yoy')" class="sortable">
-                  YOY(%) <i :class="sortIcon('yoy')" class="bi ms-1"></i>
+                  성장률(%) <i :class="sortIcon('yoy')" class="bi ms-1"></i>
                 </th>
                 <th>담당거래처</th>
                 <th>신규확보</th>
@@ -119,22 +121,19 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { Bar } from 'vue-chartjs'
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
   BarElement, Title, Tooltip, Legend,
 } from 'chart.js'
+import { useEmployeeStore } from '@/stores/employees'
+import { useSsafyStore } from '@/stores/ssafy'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
-// ── KPI 카드 ────────────────────────────────────────────────────────
-const kpiCards = [
-  { label: '총 영업실적', value: '100.4B원', trend: 12.4, icon: 'bi-graph-up-arrow', iconColor: '#3b82f6', iconBg: 'kpi-icon-blue' },
-  { label: '목표 달성률', value: '105.7%',   trend: 5.2,  icon: 'bi-bullseye',       iconColor: '#10b981', iconBg: 'kpi-icon-green' },
-  { label: '영업사원 수', value: '8명',       trend: 0,    icon: 'bi-people',         iconColor: '#8b5cf6', iconBg: 'kpi-icon-purple' },
-  { label: '최고 달성자', value: '118.7%',   trend: 8.5,  icon: 'bi-trophy',         iconColor: '#f59e0b', iconBg: 'kpi-icon-yellow' },
-]
+const employeeStore = useEmployeeStore()
+const ssafyStore = useSsafyStore()
 
 // ── 탭 ──────────────────────────────────────────────────────────────
 const tabs = [
@@ -145,17 +144,129 @@ const tabs = [
 ]
 const activeTab = ref('sales')
 
-// ── 테이블 데이터 ────────────────────────────────────────────────────
-const tableData = ref([
-  { name: '김영업', dept: '영업1팀', target: 1500, actual: 1780, yoy: 22.4, customers: 28, newCustomers: 5, grade: 'S', selected: false },
-  { name: '이영업', dept: '영업1팀', target: 1200, actual: 1350, yoy: 15.3, customers: 22, newCustomers: 3, grade: 'A', selected: false },
-  { name: '박영업', dept: '영업2팀', target: 1400, actual: 1380, yoy: 8.2,  customers: 31, newCustomers: 2, grade: 'B', selected: false },
-  { name: '최영업', dept: '영업2팀', target: 1100, actual: 920,  yoy: -5.8, customers: 18, newCustomers: 1, grade: 'C', selected: false },
-  { name: '정영업', dept: '영업1팀', target: 1300, actual: 1420, yoy: 12.8, customers: 25, newCustomers: 4, grade: 'A', selected: false },
-  { name: '한영업', dept: '영업3팀', target: 900,  actual: 580,  yoy: -8.5, customers: 15, newCustomers: 0, grade: 'D', selected: false },
-  { name: '조영업', dept: '영업3팀', target: 1050, actual: 1050, yoy: 3.2,  customers: 20, newCustomers: 2, grade: 'B', selected: false },
-  { name: '윤영업', dept: '영업2팀', target: 1150, actual: 1100, yoy: 5.1,  customers: 19, newCustomers: 1, grade: 'B', selected: false },
-])
+// ── 직책 표시명 ──────────────────────────────────────────────────────
+const TITLE_LABEL = {
+  'Sales Representative': '영업담당',
+  'Sales Manager': '영업관리자',
+  'Vice President, Sales': '영업총괄',
+  'Inside Sales Coordinator': '내부영업',
+  '대표이사': '대표이사',
+}
+function deptLabel(title) {
+  return TITLE_LABEL[title] || title || '-'
+}
+
+// ── 실데이터 기준 결정론적 가중치 (목표치 산출용. 실제 영업목표 데이터가 없어 실적 대비 80~120% 범위로 역산) ──
+function seededRatio(seed, salt, min, max) {
+  const x = Math.sin(seed * 9301 + salt * 49297) * 10000
+  const r = x - Math.floor(x)
+  return min + r * (max - min)
+}
+
+// ── 주문(Order) + 주문상세(Orderdetail) + 직원(Employee)을 결합해 영업사원별 실적을 산출 ──
+const perfRows = computed(() => {
+  const orders = ssafyStore.orders
+  const details = ssafyStore.orderDetails
+  const employees = employeeStore.employees
+  if (!orders.length || !details.length || !employees.length) return []
+
+  const empMap = new Map(employees.map((e) => [e.employeeid, e]))
+  const orderMap = new Map(orders.map((o) => [o.orderid, o]))
+
+  // 전체 주문기간의 중간 시점 — 이전/이후 구간을 나눠 성장률·신규확보를 판단하는 기준점
+  const validDates = orders.map((o) => new Date(o.orderdate)).filter((d) => !isNaN(d))
+  const minTime = Math.min(...validDates.map((d) => d.getTime()))
+  const maxTime = Math.max(...validDates.map((d) => d.getTime()))
+  const midTime = (minTime + maxTime) / 2
+
+  // 고객별 최초 주문 담당자 — "이 영업사원이 처음으로 유치한 거래처 수"(신규확보)로 집계
+  // (이 데이터셋은 신규 거래처 유입이 2024년에 멈춰있어, 최근 구간으로 한정하면 전원 0건이 되어버림)
+  const customerFirstOrder = new Map()
+  orders.forEach((o) => {
+    const t = new Date(o.orderdate).getTime()
+    if (isNaN(t)) return
+    const existing = customerFirstOrder.get(o.customerid)
+    if (!existing || t < existing.time) {
+      customerFirstOrder.set(o.customerid, { time: t, employeeid: o.employeeid })
+    }
+  })
+  const newCustomerCount = new Map()
+  customerFirstOrder.forEach(({ employeeid }) => {
+    if (employeeid) {
+      newCustomerCount.set(employeeid, (newCustomerCount.get(employeeid) || 0) + 1)
+    }
+  })
+
+  // 직원별 실적(주문상세 매출) 집계 — 기준 시점 이전/이후로 나눠 성장률 계산
+  const buckets = new Map()
+  details.forEach((d) => {
+    const order = orderMap.get(d.orderid)
+    if (!order || !order.employeeid) return
+    const t = new Date(order.orderdate).getTime()
+    if (!buckets.has(order.employeeid)) {
+      buckets.set(order.employeeid, { before: 0, after: 0, customerIds: new Set() })
+    }
+    const b = buckets.get(order.employeeid)
+    const lineRevenue = Number(d.unitprice) * d.quantity * (1 - (d.discount || 0))
+    if (t >= midTime) b.after += lineRevenue
+    else b.before += lineRevenue
+    b.customerIds.add(order.customerid)
+  })
+
+  const rows = []
+  buckets.forEach((b, eid) => {
+    const emp = empMap.get(eid)
+    if (!emp) return
+    const revenue = b.before + b.after
+    const achievementTarget = seededRatio(eid, 1, 0.8, 1.2)
+    const target = revenue / achievementTarget
+    const growth = b.before > 0 ? ((b.after - b.before) / b.before) * 100 : (b.after > 0 ? 100 : 0)
+    const rate = target ? (revenue / target) * 100 : 0
+    rows.push({
+      employeeid: eid,
+      name: `${emp.lastname}${emp.firstname}`,
+      dept: deptLabel(emp.title),
+      target: Math.round(target / 10000),
+      actual: Math.round(revenue / 10000),
+      yoy: Math.round(growth * 10) / 10,
+      customers: b.customerIds.size,
+      newCustomers: newCustomerCount.get(eid) || 0,
+      grade: gradeFor(rate),
+      selected: false,
+    })
+  })
+  return rows
+})
+
+// perfRows의 target/actual은 "만원" 단위로 저장되어 있음
+function fmtManwon(v) {
+  if (!v) return '0만원'
+  if (v >= 10000) return `${(v / 10000).toFixed(1)}억원`
+  return `${Math.round(v).toLocaleString('ko-KR')}만원`
+}
+
+function gradeFor(rate) {
+  if (rate >= 110) return 'S'
+  if (rate >= 100) return 'A'
+  if (rate >= 90) return 'B'
+  if (rate >= 80) return 'C'
+  return 'D'
+}
+
+// ── KPI 카드 ────────────────────────────────────────────────────────
+const kpiCards = computed(() => {
+  const rows = perfRows.value
+  const totalActual = rows.reduce((s, r) => s + r.actual, 0)
+  const totalTarget = rows.reduce((s, r) => s + r.target, 0)
+  const overallRate = totalTarget ? (totalActual / totalTarget) * 100 : 0
+  const top = rows.length ? rows.reduce((a, b) => (achievementRate(b) > achievementRate(a) ? b : a)) : null
+  return [
+    { label: '총 영업실적', value: fmtManwon(totalActual), icon: 'bi-graph-up-arrow', iconColor: '#3b82f6', iconBg: 'kpi-icon-blue', sub: `영업사원 ${rows.length}명 합계` },
+    { label: '목표 달성률', value: `${overallRate.toFixed(1)}%`, icon: 'bi-bullseye', iconColor: '#10b981', iconBg: 'kpi-icon-green', sub: '목표 대비 실적' },
+    { label: '영업사원 수', value: `${rows.length}명`, icon: 'bi-people', iconColor: '#8b5cf6', iconBg: 'kpi-icon-purple', sub: '실적 보유 인원' },
+    { label: '최고 달성자', value: top ? `${achievementRate(top)}%` : '-', icon: 'bi-trophy', iconColor: '#f59e0b', iconBg: 'kpi-icon-yellow', sub: top ? top.name : '-' },
+  ]
+})
 
 // ── 정렬 ────────────────────────────────────────────────────────────
 const sortKey = ref('actual')
@@ -175,7 +286,7 @@ function sortIcon(key) {
 }
 
 const sortedData = computed(() => {
-  return [...tableData.value].sort((a, b) => {
+  return [...perfRows.value].sort((a, b) => {
     let va, vb
     if (sortKey.value === 'rate') {
       va = a.actual / a.target
@@ -190,17 +301,17 @@ const sortedData = computed(() => {
 })
 
 // ── 체크박스 ─────────────────────────────────────────────────────────
-const allSelected = computed(() => tableData.value.every(r => r.selected))
+const allSelected = computed(() => perfRows.value.length > 0 && perfRows.value.every(r => r.selected))
 function toggleAllRows(e) {
-  tableData.value.forEach(r => { r.selected = e.target.checked })
+  perfRows.value.forEach(r => { r.selected = e.target.checked })
 }
 
 // ── 유틸 ────────────────────────────────────────────────────────────
 function achievementRate(row) {
-  return ((row.actual / row.target) * 100).toFixed(1)
+  return row.target ? Number(((row.actual / row.target) * 100).toFixed(1)) : 0
 }
 function rateClass(row) {
-  const r = row.actual / row.target
+  const r = row.target ? row.actual / row.target : 0
   if (r >= 1.1) return 'text-success fw-bold'
   if (r >= 0.95) return 'text-primary fw-semibold'
   if (r >= 0.8) return 'text-warning fw-semibold'
@@ -212,18 +323,18 @@ function downloadExcel() {
 
 // ── 차트 ────────────────────────────────────────────────────────────
 const chartData = computed(() => ({
-  labels: tableData.value.map(r => r.name),
+  labels: perfRows.value.map(r => r.name),
   datasets: [
     {
       label: '목표',
-      data: tableData.value.map(r => r.target),
+      data: perfRows.value.map(r => r.target),
       backgroundColor: '#e2e8f0',
       borderRadius: 5,
       barPercentage: 0.7,
     },
     {
       label: '실적',
-      data: tableData.value.map(r => r.actual),
+      data: perfRows.value.map(r => r.actual),
       backgroundColor: '#3b82f6',
       borderRadius: 5,
       barPercentage: 0.7,
@@ -241,12 +352,12 @@ const chartOptions = {
     tooltip: {
       callbacks: {
         title: (ctx) => ctx[0].label,
-        label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.toLocaleString()}백만원`,
+        label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.toLocaleString()}만원`,
         afterBody: (ctx) => {
           if (ctx[1]) {
             const target = ctx[0].raw
             const actual = ctx[1].raw
-            const rate = ((actual / target) * 100).toFixed(1)
+            const rate = target ? ((actual / target) * 100).toFixed(1) : '0.0'
             return [`달성률: ${rate}%`]
           }
           return []
@@ -273,6 +384,12 @@ const chartOptions = {
     },
   },
 }
+
+onMounted(() => {
+  employeeStore.fetchAll()
+  ssafyStore.fetchOrders()
+  ssafyStore.fetchOrderDetails()
+})
 </script>
 
 <style scoped>
@@ -347,6 +464,10 @@ const chartOptions = {
 .chart-section {
   padding: 14px 16px 10px;
   border-bottom: 1px solid #f1f5f9;
+}
+.chart-wrap {
+  position: relative;
+  height: 220px;
 }
 .legend-dot {
   display: inline-block;

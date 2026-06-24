@@ -88,19 +88,14 @@ const router = createRouter({
 
     // ── 구매 ─────────────────────────────────────────────────────────
     {
-      path: '/procurement/management',
-      name: 'procurementManagement',
-      component: () => import('@/views/ProcurementManagementView.vue'),
-    },
-    {
       path: '/procurement/orders',
       name: 'procurementOrders',
       component: () => import('@/views/ProcurementOrdersView.vue'),
     },
     {
       path: '/dashboard/procurement',
-      name: 'procurementDashboard',
-      component: () => import('@/views/ProcurementDashboardView.vue'),
+      name: 'procurementBom',
+      component: () => import('@/views/ProcurementBomView.vue'),
     },
 
     // ── 물류 ─────────────────────────────────────────────────────────
@@ -123,18 +118,13 @@ const router = createRouter({
     // ── 재무 / 회계 ──────────────────────────────────────────────────
     {
       path: '/finance/cost',
-      name: 'financeCost',
-      component: () => import('@/views/FinanceCostView.vue'),
+      name: 'financeReceivable',
+      component: () => import('@/views/FinanceReceivableView.vue'),
     },
     {
       path: '/finance/budget',
       name: 'financeBudget',
       component: () => import('@/views/FinanceBudgetView.vue'),
-    },
-    {
-      path: '/finance/profit',
-      name: 'financeProfit',
-      component: () => import('@/views/FinanceProfitView.vue'),
     },
 
     // ── 인사 ─────────────────────────────────────────────────────────

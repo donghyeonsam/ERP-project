@@ -4,8 +4,43 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from django.shortcuts import get_object_or_404, get_list_or_404
 
-from .models import Expense, AccountsReceivable, AccountsPayable
-from .serializers import ExpenseSerializer, AccountsReceivableSerializer, AccountsPayableSerializer
+from .models import Budget, Expense, AccountsReceivable, AccountsPayable
+from .serializers import BudgetSerializer, ExpenseSerializer, AccountsReceivableSerializer, AccountsPayableSerializer
+
+# =====================================================================
+# 0. Budget (부서별 예산 편성)
+# =====================================================================
+@api_view(['GET', 'POST'])
+def budget_list(request):
+    if request.method == 'GET':
+        budgets = Budget.objects.all()
+        serializer = BudgetSerializer(budgets, many=True)
+        return Response(serializer.data)
+
+    elif request.method == 'POST':
+        serializer = BudgetSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+def budget_detail(request, pk):
+    budget = get_object_or_404(Budget, pk=pk)
+
+    if request.method == 'GET':
+        serializer = BudgetSerializer(budget)
+        return Response(serializer.data)
+
+    elif request.method == 'PUT':
+        serializer = BudgetSerializer(budget, data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(serializer.data)
+
+    elif request.method == 'DELETE':
+        budget.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 # =====================================================================
 # 1. Expense (일반 경비 / 지출)
