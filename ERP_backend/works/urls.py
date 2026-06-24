@@ -21,4 +21,8 @@ urlpatterns = [
     # 5. Memo
     path('memos/', views.memo_list, name='memo_list'),
     path('memos/<int:pk>/', views.memo_detail, name='memo_detail'),
+
+    # 6. AI 추천 워크플로우
+    path('ai-recommend/', views.ai_recommend, name='ai_recommend'),
+    path('status-summary/', views.status_summary, name='status_summary'),
 ]
