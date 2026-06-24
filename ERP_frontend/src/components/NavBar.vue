@@ -115,7 +115,7 @@ const FEATURES = [
   // 경영
   { label: '경영 대시보드', icon: 'bi-speedometer2', route: '/dashboard/management', group: '경영', keywords: ['경영', '대시보드', 'management'] },
   { label: '성과 분석', icon: 'bi-graph-up', route: '/management/performance', group: '경영', keywords: ['성과', '성과분석', 'performance'] },
-  { label: '경영 보고서', icon: 'bi-file-earmark-bar-graph', route: '/management/reports', group: '경영', keywords: ['보고서', 'report', '경영보고'] },
+  { label: 'AI 예측', icon: 'bi-graph-up-arrow', route: '/management/reports', group: '경영', keywords: ['예측', 'AI', '수요예측', 'forecast', '계절성'] },
   // 영업
   { label: '거래처 관리', icon: 'bi-building', route: '/customers', group: '영업', keywords: ['거래처', '고객', '영업', 'customer'] },
   { label: '영업 대시보드', icon: 'bi-speedometer2', route: '/dashboard/sales', group: '영업', keywords: ['영업', 'sales', '영업대시'] },

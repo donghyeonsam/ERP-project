@@ -10,6 +10,7 @@ export const ssafyApi = {
   deleteCustomer: (id) => http.delete(`ssafy/customers/${id}/`),
   products: (params) => http.get('ssafy/products/', { params }),
   orders: (params) => http.get('ssafy/orders/', { params }),
+  updateOrder: (id, data) => http.put(`ssafy/orders/${id}/`, data),
   orderDetails: (params) => http.get('ssafy/order-details/', { params }),
   shippers: () => http.get('ssafy/shippers/'),
   regions: () => http.get('ssafy/regions/'),

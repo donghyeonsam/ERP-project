@@ -12,7 +12,9 @@ djangorestframework==3.17.1
 djangorestframework_simplejwt==5.5.1
 idna==3.18
 msgpack==1.2.1
+openai==2.43.0
 pillow==12.2.0
+python-dotenv==1.2.2
 PyJWT==2.13.0
 redis==8.0.0
 requests==2.34.2

@@ -16,4 +16,7 @@ export const worksApi = {
   updateMemo: (id, content) => http.put(`works/memos/${id}/`, { content }),
   togglePinMemo: (id, isPinned) => http.put(`works/memos/${id}/`, { is_pinned: isPinned }),
   deleteMemo: (id) => http.delete(`works/memos/${id}/`),
+
+  aiRecommend: (date, force) => http.get('works/ai-recommend/', { params: { date, force: force ? '1' : undefined } }),
+  statusSummary: (date) => http.get('works/status-summary/', { params: { date } }),
 }
