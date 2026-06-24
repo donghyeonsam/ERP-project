@@ -1,5 +1,14 @@
 from rest_framework import serializers
-from .models import Expense, AccountsReceivable, AccountsPayable
+from .models import Budget, Expense, AccountsReceivable, AccountsPayable
+
+# =====================================================================
+# 0. Budget (부서별 예산 편성) Serializer
+# =====================================================================
+class BudgetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Budget
+        fields = '__all__'
+
 
 # =====================================================================
 # 1. Expense (일반 경비 / 지출) Serializer
@@ -17,7 +26,7 @@ class AccountsReceivableSerializer(serializers.ModelSerializer):
     # Vue 3 SPA 화면에서 직관적으로 보여주기 위한 가독성용 읽기 전용 필드들
     customer_name = serializers.CharField(source='customerid.companyname', read_only=True)
     # 원본 주문의 일자나 담당자 정보를 프론트엔드에서 바로 보여주고 싶을 때 유용합니다.
-    order_date = serializers.DateField(source='orderid.orderdate', read_only=True)
+    order_date = serializers.DateTimeField(source='orderid.orderdate', read_only=True)
 
     class Meta:
         model = AccountsReceivable

@@ -110,9 +110,8 @@ const menuGroups = [
     label: '구매',
     icon: 'bi-cart3',
     items: [
-      { label: '구매 관리', icon: 'bi-cart-check', to: '/procurement/management' },
       { label: '발주 관리', icon: 'bi-file-earmark-text', to: '/procurement/orders' },
-      { label: '구매 대시보드', icon: 'bi-speedometer2', to: '/dashboard/procurement' },
+      { label: 'BOM 관리', icon: 'bi-diagram-3', to: '/dashboard/procurement' },
     ],
   },
   {
@@ -120,7 +119,7 @@ const menuGroups = [
     icon: 'bi-truck',
     items: [
       { label: '입고 관리', icon: 'bi-box-arrow-in-down', to: '/logistics/inbound' },
-      { label: '물품 관리', icon: 'bi-boxes', to: '/logistics/inventory' },
+      { label: '재고 관리', icon: 'bi-boxes', to: '/logistics/inventory' },
       { label: '배송 관리', icon: 'bi-truck', to: '/logistics/delivery' },
     ],
   },
@@ -128,9 +127,8 @@ const menuGroups = [
     label: '재무 / 회계',
     icon: 'bi-currency-exchange',
     items: [
-      { label: '원가 관리', icon: 'bi-calculator', to: '/finance/cost' },
+      { label: '채권채무관리', icon: 'bi-receipt-cutoff', to: '/finance/cost' },
       { label: '예산 관리', icon: 'bi-piggy-bank', to: '/finance/budget' },
-      { label: '손익 관리', icon: 'bi-bar-chart', to: '/finance/profit' },
     ],
   },
   {
@@ -143,7 +141,7 @@ const menuGroups = [
         label: '근태 관리',
         icon: 'bi-clock-history',
         children: [
-          { label: '근태 내역', icon: 'bi-calendar-check', to: '/attendance' },
+          { label: '근태 관리', icon: 'bi-calendar-check', to: '/attendance' },
           { label: '휴가 관리', icon: 'bi-calendar-minus', to: '/attendance/vacation' },
         ],
       },

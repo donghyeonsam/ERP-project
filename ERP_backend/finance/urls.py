@@ -2,6 +2,10 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # 0. Budget
+    path('budgets/', views.budget_list, name='budget_list'),
+    path('budgets/<int:pk>/', views.budget_detail, name='budget_detail'),
+
     # 1. Expense
     path('expenses/', views.expense_list, name='expense_list'),
     path('expenses/<int:pk>/', views.expense_detail, name='expense_detail'),

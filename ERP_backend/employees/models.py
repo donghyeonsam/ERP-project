@@ -15,6 +15,7 @@ class Employee(models.Model):
     employeeid = models.AutoField(primary_key=True)
     lastname = models.CharField(max_length=40)
     firstname = models.CharField(max_length=40)
+    department = models.CharField(max_length=40, blank=True, null=True)
     title = models.CharField(max_length=60, choices=TITLE_CHOICES, blank=True, null=True)
     titleofcourtesy = models.CharField(max_length=20, blank=True, null=True)
     birthdate = models.DateField(blank=True, null=True)
@@ -88,3 +89,46 @@ class Attendance(models.Model):
 
     def __str__(self):
         return f"{self.employee} {self.date} ({self.status})"
+
+
+class LeaveRequest(models.Model):
+    TYPE_CHOICES = [
+        ('연차', '연차'),
+        ('병가', '병가'),
+        ('경조사', '경조사'),
+        ('기타', '기타'),
+    ]
+    STATUS_CHOICES = [
+        ('대기', '대기'),
+        ('승인', '승인'),
+        ('반려', '반려'),
+    ]
+
+    employee = models.ForeignKey(
+        Employee, on_delete=models.CASCADE, db_column="employeeid",
+        related_name="leave_requests", verbose_name="신청자",
+    )
+    leave_type = models.CharField(max_length=10, choices=TYPE_CHOICES, default='연차', db_column="leave_type", verbose_name="휴가종류")
+    start_date = models.DateField(db_column="start_date", verbose_name="시작일")
+    end_date = models.DateField(db_column="end_date", verbose_name="종료일")
+    days = models.DecimalField(max_digits=4, decimal_places=1, default=1, db_column="days", verbose_name="일수")
+    reason = models.CharField(max_length=200, blank=True, null=True, db_column="reason", verbose_name="신청 사유")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='대기', db_column="status", verbose_name="상태")
+    approver = models.ForeignKey(
+        Employee, on_delete=models.SET_NULL, null=True, blank=True, db_column="approver_id",
+        related_name="processed_leave_requests", verbose_name="처리자",
+    )
+    applied_at = models.DateTimeField(auto_now_add=True, db_column="applied_at", verbose_name="신청일시")
+    processed_at = models.DateTimeField(null=True, blank=True, db_column="processed_at", verbose_name="처리일시")
+
+    class Meta:
+        db_table = "leaverequest"
+        ordering = ["-applied_at"]
+        verbose_name = "휴가 신청"
+        verbose_name_plural = "휴가 신청 목록"
+
+    def __str__(self):
+        return f"{self.employee} {self.leave_type} {self.start_date}~{self.end_date} ({self.status})"
+
+
+ANNUAL_LEAVE_DAYS = 15  # 연차 기준일수 (회사 정책 상수)

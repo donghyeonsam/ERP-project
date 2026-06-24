@@ -20,6 +20,11 @@ export const useSsafyStore = defineStore('ssafy', () => {
     }
   }
 
+  async function fetchOrderDetails(params) {
+    const res = await ssafyApi.orderDetails(params)
+    orderDetails.value = res.data
+  }
+
   async function fetchCustomers(params) {
     const res = await ssafyApi.customers(params)
     customers.value = res.data
@@ -35,5 +40,5 @@ export const useSsafyStore = defineStore('ssafy', () => {
     categories.value = res.data
   }
 
-  return { orders, orderDetails, customers, products, categories, loading, fetchOrders, fetchCustomers, fetchProducts, fetchCategories }
+  return { orders, orderDetails, customers, products, categories, loading, fetchOrders, fetchOrderDetails, fetchCustomers, fetchProducts, fetchCategories }
 })

@@ -14,5 +14,11 @@ export const procurementApi = {
   deleteGoodsReceipt: (id) => http.delete(`procurement/goods-receipts/${id}/`),
   materials: () => http.get('procurement/materials/'),
   boms: () => http.get('procurement/boms/'),
+  createBom: (data) => http.post('procurement/boms/', data),
+  updateBom: (id, data) => http.put(`procurement/boms/${id}/`, data),
+  deleteBom: (id) => http.delete(`procurement/boms/${id}/`),
   bomComponents: (params) => http.get('procurement/bom-components/', { params }),
+  createBomComponent: (data) => http.post('procurement/bom-components/', data),
+  updateBomComponent: (id, data) => http.put(`procurement/bom-components/${id}/`, data),
+  deleteBomComponent: (id) => http.delete(`procurement/bom-components/${id}/`),
 }

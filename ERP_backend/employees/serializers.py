@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from dj_rest_auth.registration.serializers import RegisterSerializer
-from .models import Employee, EmployeeTerritory, Attendance
+from .models import Employee, EmployeeTerritory, Attendance, LeaveRequest
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
@@ -38,14 +38,38 @@ class EmployeeTerritorySerializer(serializers.ModelSerializer):
 
 class AttendanceSerializer(serializers.ModelSerializer):
     employee_name = serializers.SerializerMethodField()
+    department = serializers.CharField(source='employee.department', read_only=True)
 
     class Meta:
         model = Attendance
-        fields = ['id', 'employee', 'employee_name', 'date', 'checkin_time', 'checkout_time', 'status', 'note']
+        fields = ['id', 'employee', 'employee_name', 'department', 'date', 'checkin_time', 'checkout_time', 'status', 'note']
         read_only_fields = ['id']
 
     def get_employee_name(self, obj):
         return f"{obj.employee.lastname}{obj.employee.firstname}"
+
+
+class LeaveRequestSerializer(serializers.ModelSerializer):
+    employee_name = serializers.SerializerMethodField()
+    department = serializers.CharField(source='employee.department', read_only=True)
+    approver_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LeaveRequest
+        fields = [
+            'id', 'employee', 'employee_name', 'department', 'leave_type',
+            'start_date', 'end_date', 'days', 'reason', 'status',
+            'approver', 'approver_name', 'applied_at', 'processed_at',
+        ]
+        read_only_fields = ['status', 'approver', 'applied_at', 'processed_at']
+
+    def get_employee_name(self, obj):
+        return f"{obj.employee.lastname}{obj.employee.firstname}"
+
+    def get_approver_name(self, obj):
+        if obj.approver:
+            return f"{obj.approver.lastname}{obj.approver.firstname}"
+        return None
 
 
 class EmployeeRegisterSerializer(RegisterSerializer):

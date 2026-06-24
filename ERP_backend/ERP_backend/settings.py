@@ -48,6 +48,9 @@ INSTALLED_APPS = [
     'messages.apps.MessagesConfig',      # ※ apps.py 에서 label='erp_messages' 필수
     'works',
     'ssafy_international',
+    'logistics',
+    'inventory',
+    'payroll',
 ]
 
 SITE_ID = 1                              # django.contrib.sites (추가됨)
