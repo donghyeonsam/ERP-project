@@ -5,11 +5,19 @@ Django settings for ERP_backend project.
 - 전역 IsAuthenticated / Vue 개발서버용 CORS
 """
 
+import os
 from pathlib import Path
 from datetime import timedelta
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env')
 
+# GMS(SSAFY API 게이트웨이) — OpenAI 호환 엔드포인트를 GMS_KEY로 호출한다.
+# .env 파일(ERP_backend/.env, git에 커밋되지 않음)에서 로드
+GMS_KEY = os.environ.get('GMS_KEY')
+GMS_BASE_URL = 'https://gms.ssafy.io/gmsapi/api.openai.com/v1'
+GMS_MODEL = 'gpt-5.4-nano'
 
 SECRET_KEY = 'django-insecure-qoa_qon@cn(tg!#cj^#25gh)+zebvyfsn4-j)p#t*(bhnyyb(('
 
@@ -51,6 +59,7 @@ INSTALLED_APPS = [
     'logistics',
     'inventory',
     'payroll',
+    'analytics',
 ]
 
 SITE_ID = 1                              # django.contrib.sites (추가됨)
