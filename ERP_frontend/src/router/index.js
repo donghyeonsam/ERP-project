@@ -133,6 +133,7 @@ const router = createRouter({
       path: '/finance/budget',
       name: 'financeBudget',
       component: () => import('@/views/FinanceBudgetView.vue'),
+      meta: { requiresLevel: 4 },
     },
 
     // ── 인사 ─────────────────────────────────────────────────────────
