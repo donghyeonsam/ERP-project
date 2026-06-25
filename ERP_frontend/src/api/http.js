@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const http = axios.create({
-  baseURL: 'http://localhost:8000/api/v1/',
+  baseURL: '/api/v1/',
   withCredentials: true,
 })
 
@@ -29,9 +29,8 @@ http.interceptors.response.use(
       original._retry = true
       isRefreshing = true
       try {
-        // TODO: confirm backend exposes this auth endpoint
         await axios.post(
-          'http://localhost:8000/dj-rest-auth/token/refresh/',
+          '/dj-rest-auth/token/refresh/',
           {},
           { withCredentials: true },
         )

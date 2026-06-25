@@ -9,9 +9,13 @@ import os
 from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
+import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / '.env')
+# load_dotenv(BASE_DIR / '.env')
+
+env = environ.Env()
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # GMS(SSAFY API 게이트웨이) — OpenAI 호환 엔드포인트를 GMS_KEY로 호출한다.
 # .env 파일(ERP_backend/.env, git에 커밋되지 않음)에서 로드
@@ -19,11 +23,11 @@ GMS_KEY = os.environ.get('GMS_KEY')
 GMS_BASE_URL = 'https://gms.ssafy.io/gmsapi/api.openai.com/v1'
 GMS_MODEL = 'gpt-5.4-nano'
 
-SECRET_KEY = 'django-insecure-qoa_qon@cn(tg!#cj^#25gh)+zebvyfsn4-j)p#t*(bhnyyb(('
+SECRET_KEY = env('SECRET_KEY')
 
-DEBUG = True
+DEBUG = env.bool('DEBUG', default=False)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
 
 
 INSTALLED_APPS = [
@@ -153,6 +157,8 @@ REST_AUTH = {
     'JWT_AUTH_REFRESH_COOKIE': 'erp-refresh',
     'JWT_AUTH_HTTPONLY': False,
     # 사원번호 회원가입용 커스텀 시리얼라이저 (추가됨)
+    'JWT_AUTH_COOKIE_SECURE': True,       # ← 추가
+    'JWT_AUTH_COOKIE_SAMESITE': 'None',   # ← 추가
     'REGISTER_SERIALIZER': 'employees.serializers.EmployeeRegisterSerializer',
 }
 
@@ -180,11 +186,10 @@ SIMPLE_JWT = {
 # =====================================================================
 # CORS — Vue 개발 서버 허용
 # =====================================================================
-CORS_ALLOWED_ORIGINS = [
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
     'http://localhost:5173',
     'http://127.0.0.1:5173',
-    'http://localhost:8080',
-]
+])
 CORS_ALLOW_CREDENTIALS = True
 
 
@@ -193,6 +198,21 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = False
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# =====================================================================
+# 배포 환경 쿠키 / CSRF 설정
+# =====================================================================
+CSRF_TRUSTED_ORIGINS = [
+    'https://glistening-twilight-831e13.netlify.app',
+]
+
+SESSION_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SECURE = True
+
+REST_AUTH_TOKEN_COOKIE_SECURE = True

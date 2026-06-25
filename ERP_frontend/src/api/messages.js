@@ -29,18 +29,19 @@ function _getCookie(name) {
 
 export function createMessageSocket(channelId, handlers) {
   const token = _getCookie('erp-access')
-  const url = `ws://localhost:8000/ws/messages/${channelId}/${token ? `?token=${token}` : ''}`
+  const wsBase = window.location.hostname === 'localhost'
+    ? 'ws://localhost:8000'
+    : `wss://ssafy-international-env.eba-xbft237q.ap-northeast-2.elasticbeanstalk.com`
+  const url = `${wsBase}/ws/messages/${channelId}/${token ? `?token=${token}` : ''}`
   const ws = new WebSocket(url)
 
   ws.onopen = () => handlers.onOpen?.()
-
   ws.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data)
       handlers.onMessage?.(data)
     } catch {}
   }
-
   ws.onclose = (e) => handlers.onClose?.(e)
   ws.onerror = (e) => handlers.onError?.(e)
 
