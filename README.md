@@ -177,6 +177,17 @@ Django Channels(WebSocket) 기반으로 채널/DM 메시지를 실시간으로 �
 - **Backend**: Django 5.2 · DRF 3.17 · SimpleJWT · dj-rest-auth(+allauth) · Django Channels 4.3(+channels-redis) · OpenAI SDK(GMS 게이트웨이 연동) · SQLite
 - **Frontend**: Vue 3.5(Composition API) · Pinia 3 · Vue Router · Chart.js 4 / vue-chartjs · Bootstrap 5 · Vite
 
+### 실행화면 캡쳐
+
+**AI 수요예측**
+![AI 수요예측](./ai_수요예측.png)
+
+**사내 메신저 (WebSocket)**
+![사내 메신저 WebSocket](./websocket_message.png)
+
+**발주 CRUD**
+![발주 CRUD](./발주_crud.png)
+
 ---
 
 ## 팀원별 개발 회고
