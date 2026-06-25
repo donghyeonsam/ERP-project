@@ -30,7 +30,7 @@
           AI 추천을 사용할 수 없습니다 ({{ store.error }}). 원본 업무 목록은 아래에서 확인하세요.
         </div>
         <div v-else-if="store.recommendation.length === 0" class="text-center text-muted py-4">
-          <i class="bi bi-check2-circle d-block fs-3 mb-2"></i>오늘 추천할 업무가 없습니다
+          <i class="bi bi-check2-circle d-block fs-3 mb-2"></i>이번 주 추천할 업무가 없습니다
         </div>
         <div v-else class="flow-row">
           <template v-for="(item, idx) in store.recommendation" :key="item.id">
@@ -48,12 +48,12 @@
       </div>
     </div>
 
-    <!-- 오늘 할 일 -->
+    <!-- 이번 주 할 일 -->
     <div class="d-flex align-items-center justify-content-between mb-2">
-      <span class="fw-semibold small">오늘 할 일 ({{ store.taskList.length }}건)</span>
+      <span class="fw-semibold small">이번 주 할 일 ({{ store.taskList.length }}건)</span>
     </div>
     <div v-if="!store.loading && store.taskList.length === 0" class="card erp-card">
-      <div class="card-body text-center text-muted py-4">오늘 할 일이 없습니다</div>
+      <div class="card-body text-center text-muted py-4">이번 주 할 일이 없습니다</div>
     </div>
     <div v-else class="row g-3">
       <div v-for="item in store.taskList" :key="'list-' + item.id" class="col-md-4 col-lg-3">

@@ -5,7 +5,7 @@
         <h5 class="fw-bold mb-1"><i class="bi bi-box-arrow-in-down me-2"></i>입고관리</h5>
         <p class="text-muted small mb-0">
           상품 입고를 등록하고 검수 처리 현황을 관리합니다.
-          <span v-if="latestDayLabel" class="text-primary fw-semibold ms-1">· {{ latestDayLabel }} 기준</span>
+          <span class="text-primary fw-semibold ms-1">· 최근 7일({{ recentRangeLabel }}) 기준</span>
         </p>
       </div>
       <button class="btn btn-primary btn-sm" @click="openCreateModal">
@@ -19,8 +19,8 @@
         <div class="card erp-card p-3">
           <div class="d-flex justify-content-between align-items-start">
             <div>
-              <div class="text-muted small mb-1">최근입고</div>
-              <div class="fw-bold" style="font-size:1.6rem">{{ stats.today }}<span class="small fw-normal text-muted ms-1">건</span></div>
+              <div class="text-muted small mb-1">최근입고(7일)</div>
+              <div class="fw-bold" style="font-size:1.6rem">{{ stats.recent }}<span class="small fw-normal text-muted ms-1">건</span></div>
             </div>
             <div class="kpi-icon bg-primary-subtle text-primary"><i class="bi bi-box-seam"></i></div>
           </div>
@@ -52,7 +52,7 @@
         <div class="card erp-card p-3">
           <div class="d-flex justify-content-between align-items-start">
             <div>
-              <div class="text-muted small mb-1">입고완료</div>
+              <div class="text-muted small mb-1">입고완료({{ currentYear }})</div>
               <div class="fw-bold" style="font-size:1.6rem">{{ stats.pass }}<span class="small fw-normal text-muted ms-1">건</span></div>
             </div>
             <div class="kpi-icon bg-success-subtle text-success"><i class="bi bi-check-circle"></i></div>
@@ -248,15 +248,14 @@ const pageSize = 15
 
 const products = ref([])
 
-// ── "최근입고" 기준: 데이터상 가장 최근 receiptdate ──
-const latestDay = computed(() => {
-  let max = null
-  for (const gr of store.goodsReceipts) {
-    if (gr.receiptdate && (!max || gr.receiptdate > max)) max = gr.receiptdate
-  }
-  return max
-})
-const latestDayLabel = computed(() => (latestDay.value ? fmtDate(latestDay.value) : ''))
+// ── "최근입고": 오늘 기준 최근 7일(오늘 포함) 이내 입고 건수 ──
+const currentYear = new Date().getFullYear()
+function daysAgoStr(n) {
+  const d = new Date()
+  d.setDate(d.getDate() - n)
+  return d.toISOString().slice(0, 10)
+}
+const recentRangeLabel = computed(() => `${fmtDate(daysAgoStr(6))} ~ ${fmtDate(todayStr())}`)
 
 // ── 목록 구성: GoodsReceipt + 발주(PurchaseOrder) 헤더 + 상품 카테고리 결합 ──
 const rows = computed(() => {
@@ -323,11 +322,13 @@ watch([search, statusFilter, warehouseFilter], () => {
 
 const stats = computed(() => {
   const list = store.goodsReceipts
+  const weekAgo = daysAgoStr(6)
+  const today = todayStr()
   return {
-    today: latestDay.value ? list.filter((g) => g.receiptdate === latestDay.value).length : 0,
+    recent: list.filter((g) => g.receiptdate && g.receiptdate >= weekAgo && g.receiptdate <= today).length,
     hold: list.filter((g) => g.qcstatus === 'hold').length,
     reject: list.filter((g) => g.qcstatus === 'reject').length,
-    pass: list.filter((g) => g.qcstatus === 'pass').length,
+    pass: list.filter((g) => g.qcstatus === 'pass' && g.receiptdate && new Date(g.receiptdate).getFullYear() === currentYear).length,
   }
 })
 

@@ -1,6 +1,6 @@
 import json
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
@@ -22,16 +22,26 @@ from .serializers import (
 from employees.views import current_employee
 
 
+def _week_range(target_date):
+    """target_date가 속한 주(일~토)의 날짜 리스트 7개를 반환한다."""
+    days_since_sunday = (target_date.weekday() + 1) % 7  # Python weekday: Mon=0..Sun=6
+    week_start = target_date - timedelta(days=days_since_sunday)
+    return [week_start + timedelta(days=i) for i in range(7)]
+
+
 def _invalidate_ai_cache(employee_id, dates):
-    """해당 직원의 AI 추천 캐시를 지정된 날짜들에 대해 무효화한다.
+    """해당 직원의 AI 추천 캐시를 지정된 날짜가 포함된 주(일~토) 전체에 대해 무효화한다.
     Task/CalendarEvent가 생성·수정·삭제될 때마다 호출해, 워크플로우 페이지가
-    최신 데이터로 즉시 재계산되도록 한다 (그렇지 않으면 5분 캐시 동안 새 업무가
-    AI 추천에 반영되지 않는 문제가 생긴다)."""
+    최신 데이터로 즉시 재계산되도록 한다. AI 추천이 '해당 날짜가 속한 주간 마감 업무'를
+    함께 분석하므로, 그 주의 어느 날짜를 보고 있었든 캐시가 무효화되어야 한다."""
     if not employee_id:
         return
     for d in dates:
-        if d:
-            cache.delete(f'ai_recommend:{employee_id}:{d}')
+        if not d:
+            continue
+        target = d if isinstance(d, date) else datetime.strptime(d, '%Y-%m-%d').date()
+        for day in _week_range(target):
+            cache.delete(f'ai_recommend:{employee_id}:{day.isoformat()}')
 
 
 # =====================================================================
@@ -280,8 +290,12 @@ def _gather_work_items(emp, target_date):
 
     items = []
 
+    # 당일 마감 업무만 보던 것을 target_date가 속한 주(일~토) 전체 마감 업무로 확장.
+    # AI가 그 주간 업무 전체의 중요도를 분석해 우선순위를 매길 수 있도록 데이터 범위를 넓힌다.
+    week_days = _week_range(target_date)
+    week_start, week_end = week_days[0], week_days[-1]
     tasks = Task.objects.filter(assignee=emp).filter(
-        Q(due_date=target_date) | Q(due_date__lt=target_date, status__in=['TODO', 'IN_PROGRESS'])
+        Q(due_date__range=(week_start, week_end)) | Q(due_date__lt=week_start, status__in=['TODO', 'IN_PROGRESS'])
     )
     for t in tasks:
         items.append({
@@ -327,7 +341,7 @@ def _gather_work_items(emp, target_date):
     return items
 
 
-def _call_ai_ranking(raw_items, date_str):
+def _call_ai_ranking(raw_items, date_str, week_start, week_end):
     from openai import OpenAI
     client = OpenAI(api_key=settings.GMS_KEY, base_url=settings.GMS_BASE_URL)
 
@@ -337,15 +351,17 @@ def _call_ai_ranking(raw_items, date_str):
     )
     system_msg = "You are an ERP workflow assistant. Return only a valid JSON array, no other text."
     user_msg = (
-        f"Given the employee's tasks for {date_str}, return a JSON array ordered most-to-least urgent.\n"
+        f"The reference date is {date_str}, which falls in the calendar week {week_start} (Sun) to {week_end} (Sat).\n"
+        "The item list below includes work items due anywhere within that week (plus older overdue items). "
+        "Analyze each item's importance using its own 'deadline' field and return a JSON array ordered most-to-least urgent.\n"
         "Each element must follow this shape exactly:\n"
         '{"id": <original record id, copied verbatim>, "title": <task title>, "type": <task type string>, '
         '"priority": "high" | "medium" | "low", "deadline": <ISO date string or null>, '
         '"status": <current status string>, "summary": <one-sentence description>, '
         '"suggested_order": <integer starting at 1>, "ai_reason": <one sentence explaining this item\'s placement>}\n'
         "Priority rules:\n"
-        "- Imminent deadlines (today or overdue) -> high\n"
-        "- Important-level flag or near deadline -> medium\n"
+        f"- Deadline is {date_str} (today) or already overdue -> high\n"
+        "- Deadline falls later this week -> medium, ranked sooner-deadline-first\n"
         "- In-progress items before not-started items of the same priority\n"
         "- Completed / approved / delivered items -> listed last, marked done\n"
         f"Task data: {task_data}\n"
@@ -395,7 +411,8 @@ def ai_recommend(request):
         return Response({'error': 'AI unavailable', 'items': []})
 
     try:
-        ranked = _call_ai_ranking(raw_items, date_str)
+        week_days = _week_range(target_date)
+        ranked = _call_ai_ranking(raw_items, date_str, week_days[0].isoformat(), week_days[-1].isoformat())
         # AI 응답 스키마에는 done이 없으므로, 원본 데이터의 done 플래그를 id 기준으로 다시 병합한다
         raw_by_id = {f"{it['source_type']}:{it['source_id']}": it for it in raw_items}
         for item in ranked:

@@ -28,21 +28,9 @@
       </div>
     </div>
 
-    <!-- 탭 네비게이션 -->
-    <div class="tab-nav mb-0">
-      <button
-        v-for="tab in tabs"
-        :key="tab.key"
-        class="tab-btn"
-        :class="{ active: activeTab === tab.key }"
-        @click="activeTab = tab.key"
-      >{{ tab.label }}</button>
-    </div>
-
-    <!-- 탭 컨텐츠 -->
+    <!-- 영업사원 성과 -->
     <div class="erp-card tab-content-card">
-      <!-- 영업사원 성과 탭 -->
-      <div v-if="activeTab === 'sales'">
+      <div>
         <!-- 차트 영역 -->
         <div class="chart-section">
           <div class="d-flex align-items-center justify-content-between mb-3">
@@ -110,12 +98,6 @@
           </table>
         </div>
       </div>
-
-      <!-- 나머지 탭: 준비 중 -->
-      <div v-else class="text-center text-muted py-5">
-        <i class="bi bi-bar-chart-line fs-2 d-block mb-2"></i>
-        <div>{{ tabs.find(t => t.key === activeTab)?.label }} 준비 중입니다</div>
-      </div>
     </div>
   </div>
 </template>
@@ -134,15 +116,6 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 const employeeStore = useEmployeeStore()
 const ssafyStore = useSsafyStore()
-
-// ── 탭 ──────────────────────────────────────────────────────────────
-const tabs = [
-  { key: 'sales',    label: '영업사원 성과' },
-  { key: 'trend',    label: '매출 추이' },
-  { key: 'channel',  label: '채널 분석' },
-  { key: 'product',  label: '제품 성과' },
-]
-const activeTab = ref('sales')
 
 // ── 직책 표시명 ──────────────────────────────────────────────────────
 const TITLE_LABEL = {
@@ -433,32 +406,7 @@ onMounted(() => {
 .kpi-value { font-size: 1.35rem; font-weight: 700; color: #1e293b; line-height: 1.2; }
 .kpi-trend { font-size: 0.72rem; margin-top: 2px; }
 
-/* ── 탭 ── */
-.tab-nav {
-  display: flex;
-  border-bottom: 2px solid #e5e7eb;
-  gap: 0;
-}
-.tab-btn {
-  border: none;
-  background: transparent;
-  padding: 10px 20px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #64748b;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  transition: color 0.15s, border-color 0.15s;
-}
-.tab-btn:hover { color: #2563eb; }
-.tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 600; }
-
-.tab-content-card {
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
-  border-top: none;
-}
+.tab-content-card { }
 
 /* ── 차트 ── */
 .chart-section {

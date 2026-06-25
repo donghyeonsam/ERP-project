@@ -43,4 +43,15 @@ body {
   min-height: calc(100vh - var(--navbar-height));
   padding: 24px;
 }
+
+/* 보고서 출력(window.print) 시 네비게이션/사이드바/플로팅 버튼을 숨기고 본문만 인쇄 */
+@media print {
+  .erp-navbar, .erp-sidebar, .messenger-fab, .messenger-window, .no-print {
+    display: none !important;
+  }
+  .main-content {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
 </style>
